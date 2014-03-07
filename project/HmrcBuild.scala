@@ -3,26 +3,31 @@ import Keys._
 
 object HmrcBuild extends Build {
 
-  import Dependencies._
+
   import uk.gov.hmrc.DefaultBuildSettings
 
   val nameApp = "simple-reactivemongo"
   val versionApp = "1.0.0-SNAPSHOT"
 
-  val appDependencies = Seq(
-    Compile.reactiveMongo,
-    Compile.playJson,
-    Compile.nscalaTime,
+  val appDependencies = {
+    import Dependencies._
 
-    Test.junit,
-    Test.scalaTest,
-    Test.pegdown
+    Seq(
+      Compile.reactiveMongo,
+      Compile.playJson,
+      Compile.nscalaTime,
+
+      Test.junit,
+      Test.scalaTest,
+      Test.pegdown
+    )
+  }
+
+  lazy val root = Project(nameApp, file("."), settings = DefaultBuildSettings(nameApp, versionApp)() ++ Seq(
+      libraryDependencies ++= appDependencies,
+      publishArtifact in Test := true
+    ) ++ SonatypeBuild()
   )
-
-  lazy val root = Project(nameApp, file("."))
-      .settings(DefaultBuildSettings(nameApp, versionApp)(): _*)
-      .settings(libraryDependencies ++= appDependencies)
-      .settings(SonatypeBuild() : _*)
 
 }
 
