@@ -1,6 +1,7 @@
 # simple-reactivemongo
 
-This is framework, enabling support for [ReactiveMongo](http://reactivemongo.org) - reactive, asynchronous and non-blocking Scala driver for MongoDB, in Scala Play Framework. It is originally a fork of [Play-ReactiveMongo](https://github.com/ReactiveMongo/Play-ReactiveMongo).
+Provides simple serialization for [ReactiveMongo](http://reactivemongo.org) - reactive, asynchronous and non-blocking Scala driver for MongoDB.
+This started as a fork of [Play-ReactiveMongo](https://github.com/ReactiveMongo/Play-ReactiveMongo).
 
 ## Main features
 
@@ -41,27 +42,3 @@ mongo-async-driver {
   }
 }
 ```
-
-## Example of a simple repository class ##
-
-```scala
-
-case class TestObject(aField: String,
-                      anotherField: Option[String] = None,
-                      crud: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
-                      _id: BSONObjectID = BSONObjectID.generate)
-                      
-object TestObject {
-  import ReactiveMongoFormats.objectIdFormats
-  val formats = Json.format[TestObject]
-}
-
-class SimpleTestRepository(implicit mc: MongoConnector) 
-      extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
-
-  override def ensureIndexes() {}
-  
-}
-
-```
-
