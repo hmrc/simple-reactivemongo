@@ -1,13 +1,36 @@
 *.class
-*.log
+target
+logs
+lib_managed
+pids
 
-# sbt specific
-dist/*
-target/
-lib_managed/
-src_managed/
-project/boot/
-project/plugins/project/
+*/*dependency-reduced-pom.xml
 
-# Scala-IDE specific
-.scala_dependencies
+*.jar
+*.war
+*.ear
+
+*.ipr
+*.iws
+*.iml
+**/*.iml
+.idea
+
+*.DS_Store
+**/*.DS_Store
+
+**/target/*
+target
+
+**/bin/*
+**/lib/*
+*.classpath
+*.project
+**/*.settings
+.project
+.settings
+.classpath
+.sass-cache
+
+nohup.out
+rebel.xml
