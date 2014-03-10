@@ -7,7 +7,7 @@ object HmrcBuild extends Build {
   import uk.gov.hmrc.DefaultBuildSettings
 
   val nameApp = "simple-reactivemongo"
-  val versionApp = "1.0.0"
+  val versionApp = "1.0.1-SNAPSHOT"
 
   val appDependencies = {
     import Dependencies._
@@ -24,9 +24,15 @@ object HmrcBuild extends Build {
   }
 
   lazy val root = Project(nameApp, file("."), settings = DefaultBuildSettings(nameApp, versionApp)() ++ Seq(
-      libraryDependencies ++= appDependencies,
-      publishArtifact in Test := true
-    ) ++ SonatypeBuild()
+    libraryDependencies ++= appDependencies,
+    publishArtifact in Test := true,
+    resolvers := Seq(
+      Opts.resolver.sonatypeReleases,
+      Opts.resolver.sonatypeSnapshots,
+      "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/",
+      "typesafe-snapshots" at "http://repo.typesafe.com/typesafe/snapshots/"
+    )
+  ) ++ SonatypeBuild()
   )
 
 }
@@ -34,8 +40,8 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
-    val reactiveMongo =  "org.reactivemongo" %% "reactivemongo" % "0.10.0"
-    val playJson = "com.typesafe.play" %% "play-json" % "2.2.1" % "provided"
+    val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.0"
+    val playJson = "com.typesafe.play" %% "play-json" % "[2.2.1,2.2.2]" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "0.8.0"
   }
 
