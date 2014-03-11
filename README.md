@@ -42,3 +42,28 @@ mongo-async-driver {
   }
 }
 ```
+
+
+## Example of a simple repository class ##
+
+```scala
+
+case class TestObject(aField: String,
+                      anotherField: Option[String] = None,
+                      crud: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
+                      _id: BSONObjectID = BSONObjectID.generate)
+
+object TestObject {
+  import ReactiveMongoFormats.objectIdFormats
+  val formats = Json.format[TestObject]
+}
+
+class SimpleTestRepository(implicit mc: MongoConnector)
+      extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
+
+  override def ensureIndexes() {}
+
+}
+
+```
+
