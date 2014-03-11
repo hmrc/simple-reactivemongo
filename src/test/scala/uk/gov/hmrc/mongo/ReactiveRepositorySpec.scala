@@ -19,6 +19,7 @@ import reactivemongo.bson.BSONObjectID
 import org.scalatest.{BeforeAndAfterEach, WordSpec, Matchers}
 import scala.concurrent.Future
 import play.api.libs.json.Json
+import reactivemongo.core.errors.DatabaseException
 
 
 case class TestObject(aField: String,
@@ -35,7 +36,12 @@ object TestObject {
 class SimpleTestRepository(implicit mc: MongoConnector)
   extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
-  override def ensureIndexes() {}
+  import reactivemongo.api.indexes.IndexType
+  import reactivemongo.api.indexes.Index
+
+  override def ensureIndexes() {
+    collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
+  }
 }
 
 class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting {
@@ -127,6 +133,23 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       val updatedRecord = await(repository.findById(e1._id))
       updatedRecord.get.aField shouldBe "3"
+    }
+  }
+
+  "Indexes" should {
+    "be created via ensureIndexes method" in {
+
+      val uniqueField = "i_am_a_unique_field"
+      val saveWithoutError = TestObject(uniqueField)
+
+      await(repository.save(saveWithoutError))
+
+      val shouldNotSave = TestObject(uniqueField)
+
+      intercept[DatabaseException] {
+        await(repository.save(shouldNotSave))
+      }
+
     }
   }
 

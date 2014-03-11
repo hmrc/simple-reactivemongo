@@ -23,6 +23,10 @@ import org.joda.time.{DateTimeZone, DateTime}
 import reactivemongo.json.collection.JSONCollection
 
 trait Indexes {
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  implicit val ec = global
+
   def ensureIndexes()
 }
 
