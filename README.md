@@ -9,8 +9,6 @@ This started as a fork of [Play-ReactiveMongo](https://github.com/ReactiveMongo/
 
 With simple-reactivemongo, you can use directly the embedded JSON library in Play >= 2.1. There is a specialized collection called `JSONCollection` that deals naturally with `JSValue` and `JSObject` instead of ReactiveMongo's `BSONDocument`.
 
-Another advantage to use this plugin is to be capable of using JSON documents for querying MongoDB.
-
 ### Abstract Repository class ###
 
 Extending `ResponsiveRepository` will provide you with some often used functionality.
