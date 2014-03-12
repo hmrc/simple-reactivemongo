@@ -1,7 +1,16 @@
 #!/bin/bash
 
 SBT_BOOT_DIR=${HOME}/.sbt/boot/
-SBT_TARGETS="clean test publishSigned"
+
+VERSION=`grep "versionApp =" project/HmrcBuild.scala | awk '{print $4}' | sed -e 's/^"//'  -e 's/"$//'`
+
+if [[ $VERSION == *SNAPSHOT* ]]
+then
+  SBT_TARGETS="clean test publishSigned"
+else
+  SBT_TARGETS="clean test publishSigned sonatypeRelease"
+fi
+
 SBT_STANDARD_OPTS="-Dsbt.log.noformat=true -Xmx1024M -XX:+CMSClassUnloadingEnabled -XX:+UseCompressedOops -XX:MaxPermSize=768m  -Dfile.encoding=UTF8"
 
 if [ -f "/etc/buildrc" ]; then
