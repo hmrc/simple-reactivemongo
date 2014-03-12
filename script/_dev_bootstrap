@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo "Setting up dev environment for preferences"
-./sbt "gen-idea sbt-classifiers"
