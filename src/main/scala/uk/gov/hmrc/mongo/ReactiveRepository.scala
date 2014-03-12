@@ -25,7 +25,7 @@ import reactivemongo.json.collection.JSONCollection
 trait Indexes {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  implicit val ec = global
+  lazy implicit val ec = global
 
   def ensureIndexes()
 }
@@ -62,7 +62,12 @@ trait Repository[A <: Any, ID <: Any] {
 
 }
 
-abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String, mongo: () => DB, domainFormat: Format[A], idFormat: Format[ID], mc: Option[JSONCollection] = None)(implicit manifest: Manifest[A], mid: Manifest[ID])
+abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
+                                                       mongo: () => DB,
+                                                       domainFormat: Format[A],
+                                                       idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
+                                                       mc: Option[JSONCollection] = None)
+                                                      (implicit manifest: Manifest[A], mid: Manifest[ID])
   extends Repository[A, ID] with Indexes {
 
   implicit val domainFormatImplicit = domainFormat
