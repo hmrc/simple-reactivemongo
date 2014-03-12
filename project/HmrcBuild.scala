@@ -41,7 +41,7 @@ object Dependencies {
 
   object Compile {
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.0"
-    val playJson = "com.typesafe.play" %% "play-json" % "[2.2.1,2.2.2]" % "provided"
+    val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.2.2]" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "0.8.0"
   }
 
