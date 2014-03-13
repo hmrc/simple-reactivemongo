@@ -18,9 +18,9 @@ package uk.gov.hmrc.mongo
 import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
-object MongoRestFormats extends MongoRestFormats
+object BSONObjectIdFormats extends BSONObjectIdFormats
 
-trait MongoRestFormats {
+trait BSONObjectIdFormats {
 
   implicit val objectIdRead: Reads[BSONObjectID] = __.read[String].map {
     oid => BSONObjectID(oid)
@@ -30,7 +30,7 @@ trait MongoRestFormats {
     def writes(oid: BSONObjectID): JsValue = JsString(oid.stringify)
   }
 
-  implicit val objectIdFormats = Format(MongoRestFormats.objectIdRead, MongoRestFormats.objectIdWrite)
+  implicit val objectIdFormats = Format(BSONObjectIdFormats.objectIdRead, BSONObjectIdFormats.objectIdWrite)
 
 }
 
