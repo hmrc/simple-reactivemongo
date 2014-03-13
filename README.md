@@ -20,7 +20,7 @@ In your project/Build.scala:
 
 ```scala
 libraryDependencies ++= Seq(
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "1.0.0",
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "1.0.1",
   "com.typesafe.play" %% "play-json" % "2.2.2" //supports from 2.1.0
 )
 ```
