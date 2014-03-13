@@ -1,0 +1,2 @@
+* Addition of `ExecutionContext` to `Indexes` trait
+* Provide further details in README
