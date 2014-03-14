@@ -28,12 +28,17 @@ case class TestObject(aField: String,
                       optionalCollection : Option[List[NestedModel]] = None,
                       nestedMapOfCollections : Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
                       crud: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
-                      _id: BSONObjectID = BSONObjectID.generate)
+                      id: BSONObjectID = BSONObjectID.generate)
 
 object TestObject {
   import ReactiveMongoFormats.objectIdFormats
+  import ReactiveMongoFormats.mongoEntity
+
   implicit val nestedModelformats = Json.format[NestedModel]
-  implicit val formats = Json.format[TestObject]
+
+  implicit val formats = mongoEntity{
+    Json.format[TestObject]
+  }
 }
 
 class SimpleTestRepository(implicit mc: MongoConnector)
@@ -98,7 +103,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       await(repository.save(e1))
 
-      val result: Option[TestObject] = await(repository.findById(e1._id))
+      val result: Option[TestObject] = await(repository.findById(e1.id))
       result should not be None
       result should be(Some(e1))
     }
@@ -118,14 +123,14 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       await(repository.save(e1))
 
 
-      val result = await(repository.saveOrUpdate(repository.findById(e1._id), Future.successful(TestObject("2")), _.copy(aField = "3")))
+      val result = await(repository.saveOrUpdate(repository.findById(e1.id), Future.successful(TestObject("2")), _.copy(aField = "3")))
 
       result.updateType match {
         case Updated(_, _) => // ok
         case Saved(_) => fail
       }
 
-      val updatedRecord = await(repository.findById(e1._id))
+      val updatedRecord = await(repository.findById(e1.id))
       updatedRecord.get.aField shouldBe "3"
     }
 
@@ -141,7 +146,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
         case Saved(s) => s.aField shouldBe "3"
       }
 
-      val updatedRecord = await(repository.findById(e1._id))
+      val updatedRecord = await(repository.findById(e1.id))
       updatedRecord.get.aField shouldBe "3"
     }
   }
