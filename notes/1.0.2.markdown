@@ -1,0 +1,3 @@
+* rename MongoRestFormats to BSONObjectIdFormats
+* remove unread querystring params from mongo uri in `MongoSpecSupport`
+* update ReactiveRepositorySpec to test nested and optional collections and example usage of `ReactiveMongoFormats.mongoEntity`
