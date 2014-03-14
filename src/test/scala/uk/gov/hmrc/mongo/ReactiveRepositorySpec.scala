@@ -21,15 +21,18 @@ import scala.concurrent.Future
 import play.api.libs.json.Json
 import reactivemongo.core.errors.DatabaseException
 
+case class NestedModel(a : String, b : String)
 
 case class TestObject(aField: String,
                       anotherField: Option[String] = None,
+                      optionalCollection : Option[List[NestedModel]] = None,
+                      nestedMapOfCollections : Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
                       crud: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
                       _id: BSONObjectID = BSONObjectID.generate)
 
-
 object TestObject {
   import ReactiveMongoFormats.objectIdFormats
+  implicit val nestedModelformats = Json.format[NestedModel]
   implicit val formats = Json.format[TestObject]
 }
 
@@ -57,8 +60,14 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
     "return all created records" in {
 
       val e1 = TestObject("1")
-      val e2 = TestObject("2")
-      val e3 = TestObject("3")
+      val e2 = TestObject("2", optionalCollection = Some(List(NestedModel("A", "B"), NestedModel("C", "D"))))
+      val e3 = TestObject("3", nestedMapOfCollections = Map(
+        "level_one" -> List(
+          Map("level_two_1" -> Seq(NestedModel("A1", "B1"), NestedModel("C1", "D1"), NestedModel("E1", "F1"))),
+          Map("level_two_2" -> Seq(NestedModel("A2", "B2"))),
+          Map("level_two_3" -> Seq(NestedModel("A1", "B1"), NestedModel("C1", "D1"), NestedModel("E1", "F1"), NestedModel("G2", "H2")))
+        )
+      ))
       val e4 = TestObject("4")
 
       val created = for {
@@ -75,6 +84,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       result should contain(e1)
       result should contain(e2)
       result should contain(e3)
+
       result should not contain (e4)
 
     }
