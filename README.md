@@ -29,7 +29,7 @@ libraryDependencies ++= Seq(
 
 Create a `case class` that represents to serialise to mongo.
 
-Create [JSON Read/Write](http://www.playframework.com/documentation/2.2.x/ScalaJsonCombinators)) converters. Or if you are doing nothing special create a companion object for the case class
+Create [JSON Read/Write](http://www.playframework.com/documentation/2.2.x/ScalaJsonCombinators) converters. Or if you are doing nothing special create a companion object for the case class
 with an implicit member set by play.api.libs.json.Json.format[A]
 
 Extend `ResponsiveRepository` which will provide you with some commonly used functionality.
