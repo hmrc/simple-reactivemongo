@@ -70,7 +70,7 @@ class SimpleTestRepository(implicit mc: MongoConnector)
 
 #### Built-in JSON converters ([Formats](http://www.playframework.com/documentation/2.2.x/ScalaJsonCombinators)) for often used types ###
 
-Formats for BSONObjectId and Joda time classes are implemented (see `uk.gov.hmrc.mongo.ReactiveMongoFormats`)
+Formats for BSONObjectId and Joda time classes are implemented (see [ReactiveMongoFormats](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/uk/gov/hmrc/mongo/ReactiveMongoFormats.scala))
 
 #### Configure underlying Akka system
 
