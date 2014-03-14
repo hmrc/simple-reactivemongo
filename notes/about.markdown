@@ -1,1 +1,1 @@
-[simple-reactivemongo](https://github.com/hmrc/simple-reactivemongo) provides simple serialization for [ReactiveMongo](http://reactivemongo.org) - reactive, asynchronous and non-blocking Scala driver for MongoDB.
+[simple-reactivemongo](https://github.com/hmrc/simple-reactivemongo) provides simple case class serialization for [ReactiveMongo](http://reactivemongo.org) - reactive, asynchronous and non-blocking Scala driver for MongoDB.
