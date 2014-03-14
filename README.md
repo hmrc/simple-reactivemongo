@@ -36,17 +36,25 @@ Extend `ResponsiveRepository` which will provide you with some commonly used fun
 
 If the repository requires any indexes override ensureIndexes() and add them to this method.
 
+If you prefer to drop the underscore for the 'id' field in the domain case class then wrap the domain formats in `ReactiveMongoFormats.mongoEntity`
 
 ```scala
 
 case class TestObject(aField: String,
                       anotherField: Option[String] = None,
+                      optionalCollection : Option[List[NestedModel]] = None,
+                      nestedMapOfCollections : Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
                       crud: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
-                      _id: BSONObjectID = BSONObjectID.generate)
+                      id: BSONObjectID = BSONObjectID.generate)
 
 object TestObject {
-  import ReactiveMongoFormats.objectIdFormats
-  val formats = Json.format[TestObject]
+  import ReactiveMongoFormats.{objectIdFormats, mongoEntity}
+
+  implicit val nestedModelformats = Json.format[NestedModel]
+
+  implicit val formats = mongoEntity{
+    Json.format[TestObject]
+  }
 }
 
 class SimpleTestRepository(implicit mc: MongoConnector)
