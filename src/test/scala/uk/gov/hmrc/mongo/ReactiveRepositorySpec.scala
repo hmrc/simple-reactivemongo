@@ -31,8 +31,7 @@ case class TestObject(aField: String,
                       id: BSONObjectID = BSONObjectID.generate)
 
 object TestObject {
-  import ReactiveMongoFormats.objectIdFormats
-  import ReactiveMongoFormats.mongoEntity
+  import ReactiveMongoFormats.{objectIdFormats, mongoEntity}
 
   implicit val nestedModelformats = Json.format[NestedModel]
 
