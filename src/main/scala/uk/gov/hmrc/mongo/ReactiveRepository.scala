@@ -27,7 +27,7 @@ trait Indexes {
 
   lazy implicit val ec = global
 
-  def ensureIndexes()
+  def ensureIndexes() {}
 }
 
 sealed abstract class UpdateType[A] {
