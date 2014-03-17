@@ -73,9 +73,9 @@ object SonatypeBuild {
           </license>
         </licenses>
         <scm>
-          <connection>scm:git@github.com:hmrc/sbt-utils.git</connection>
-          <developerConnection>scm:git@github.com:hmrc/sbt-utils.git</developerConnection>
-          <url>git@github.com:hmrc/sbt-utils.git</url>
+          <connection>scm:git@github.com:hmrc/simple-reactivemongo.git</connection>
+          <developerConnection>scm:git@github.com:hmrc/simple-reactivemongo.git</developerConnection>
+          <url>git@github.com:hmrc/simple-reactivemongo.git</url>
         </scm>
         <developers>
           <developer>
