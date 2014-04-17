@@ -5,7 +5,7 @@
 MAVEN_VERSION=3.0.5
 SBT_VERSION=0.13.2
 
-SBT_DOWNLOAD="http://scalasbt.artifactoryonline.com/scalasbt/sbt-native-packages/org/scala-sbt/sbt/${SBT_VERSION}/sbt.tgz"
+SBT_DOWNLOAD="http://dl.bintray.com/sbt/native-packages/sbt/${SBT_VERSION}/sbt-${SBT_VERSION}.zip"
 
 function error_exit 
 {
