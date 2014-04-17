@@ -28,7 +28,7 @@ case class TestObject(aField: String,
                       anotherField: Option[String] = None,
                       optionalCollection: Option[List[NestedModel]] = None,
                       nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
-                      crud: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
+                      modifiedDetails: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
                       jsValue: Option[JsValue] = None,
                       id: BSONObjectID = BSONObjectID.generate)
 
@@ -166,7 +166,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       val e1 = TestObject("1")
 
       await(repository.save(e1))
-
+      val originalSave = await(repository.findById(e1.id))
 
       val result = await(repository.saveOrUpdate(repository.findById(e1.id), Future.successful(TestObject("2")), _.copy(aField = "3")))
 
@@ -177,6 +177,8 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       val updatedRecord = await(repository.findById(e1.id))
       updatedRecord.get.aField shouldBe "3"
+
+      updatedRecord.get.modifiedDetails should not be originalSave.get.modifiedDetails
     }
 
     "return a default value, with modifiers applied, if the record is not found" in {

@@ -77,6 +77,8 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
   extends Repository[A, ID] with Indexes {
 
+  import play.api.libs.json.Json.JsValueWrapper
+
   implicit val domainFormatImplicit = domainFormat
   implicit val idFormatImplicit = idFormat
 
@@ -86,7 +88,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   ensureIndexes()
 
-  override def find(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
+  override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
     collection.find(Json.obj(query: _*)).cursor[A].collect[List]()
   }
 
@@ -102,7 +104,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   override def removeById(id: ID)(implicit ec: ExecutionContext): Future[LastError] = collection.remove(Json.obj("_id" -> id), GetLastError(), false)
 
-  override def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[LastError] = {
+  override def remove(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[LastError] = {
     collection.remove(Json.obj(query: _*), GetLastError(), false)
   }
 
