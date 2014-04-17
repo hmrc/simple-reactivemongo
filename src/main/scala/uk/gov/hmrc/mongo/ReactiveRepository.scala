@@ -23,11 +23,12 @@ import org.joda.time.{DateTimeZone, DateTime}
 import reactivemongo.json.collection.JSONCollection
 
 trait Indexes {
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   lazy implicit val ec = global
 
-  def ensureIndexes() : Unit = {}
+  def ensureIndexes(): Unit = {}
 }
 
 sealed abstract class UpdateType[A] {
@@ -45,6 +46,8 @@ trait Repository[A <: Any, ID <: Any] {
   def findAll(implicit ec: ExecutionContext): Future[List[A]] = ???
 
   def findById(id: ID)(implicit ec: ExecutionContext): Future[Option[A]] = ???
+
+  def find(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]]
 
   def count(implicit ec: ExecutionContext): Future[Int] = ???
 
@@ -83,6 +86,10 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   ensureIndexes()
 
+  override def find(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
+    collection.find(Json.obj(query: _*)).cursor[A].collect[List]()
+  }
+
   override def findAll(implicit ec: ExecutionContext): Future[List[A]] = collection.find(Json.obj()).cursor[A].collect[List]()
 
   override def findById(id: ID)(implicit ec: ExecutionContext): Future[Option[A]] = {
@@ -96,7 +103,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   override def removeById(id: ID)(implicit ec: ExecutionContext): Future[LastError] = collection.remove(Json.obj("_id" -> id), GetLastError(), false)
 
   override def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[LastError] = {
-    collection.remove(Json.obj(query : _*), GetLastError(), false)
+    collection.remove(Json.obj(query: _*), GetLastError(), false)
   }
 
   override def drop(implicit ec: ExecutionContext): Future[Boolean] = collection.drop.recover {

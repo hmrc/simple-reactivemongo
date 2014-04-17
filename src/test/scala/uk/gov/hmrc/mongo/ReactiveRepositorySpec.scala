@@ -18,24 +18,27 @@ package uk.gov.hmrc.mongo
 import reactivemongo.bson.BSONObjectID
 import org.scalatest.{BeforeAndAfterEach, WordSpec, Matchers}
 import scala.concurrent.Future
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, JsValue, Json}
 import reactivemongo.core.errors.DatabaseException
+import scala.annotation.tailrec
 
-case class NestedModel(a : String, b : String)
+case class NestedModel(a: String, b: String)
 
 case class TestObject(aField: String,
                       anotherField: Option[String] = None,
-                      optionalCollection : Option[List[NestedModel]] = None,
-                      nestedMapOfCollections : Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
+                      optionalCollection: Option[List[NestedModel]] = None,
+                      nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
                       crud: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
+                      jsValue: Option[JsValue] = None,
                       id: BSONObjectID = BSONObjectID.generate)
 
 object TestObject {
+
   import ReactiveMongoFormats.{objectIdFormats, mongoEntity}
 
   implicit val nestedModelformats = Json.format[NestedModel]
 
-  implicit val formats = mongoEntity{
+  implicit val formats = mongoEntity {
     Json.format[TestObject]
   }
 }
@@ -207,6 +210,34 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
         await(repository.save(shouldNotSave))
       }
 
+    }
+  }
+
+  "Storing a raw JsValue" should {
+    "be able to be queried" in {
+
+      val unknownStructure = Json.toJson(Map(
+        "key1" -> Json.toJson("top level value"),
+        "key2" -> Json.toJson(List(1, 2, 3)),
+        "key3" -> Json.toJson(42.0),
+        "key4" -> Json.toJson(Map(
+          "nested-collection" -> Json.toJson(List(4, 5, 6)),
+          "another-value-type" -> Json.toJson(99)
+        ))
+      ))
+      val saved = TestObject("jsValueTest", jsValue = Some(unknownStructure))
+
+      await(repository.save(saved))
+
+      val result: Option[TestObject] = await(repository.findById(saved.id))
+      result should not be None
+
+      val found = await(repository.find("jsValue.key1" -> "top level value"))
+
+      found should not be empty
+      found.size shouldBe 1
+
+      found.head.id shouldBe saved.id
     }
   }
 
