@@ -27,7 +27,7 @@ trait Indexes {
 
   lazy implicit val ec = global
 
-  def ensureIndexes() {}
+  def ensureIndexes() : Unit = {}
 }
 
 sealed abstract class UpdateType[A] {
@@ -49,6 +49,10 @@ trait Repository[A <: Any, ID <: Any] {
   def count(implicit ec: ExecutionContext): Future[Int] = ???
 
   def removeAll(implicit ec: ExecutionContext): Future[LastError] = ???
+
+  def removeById(id: ID)(implicit ec: ExecutionContext): Future[LastError] = ???
+
+  def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[LastError] = ???
 
   def drop(implicit ec: ExecutionContext): Future[Boolean] = ???
 
@@ -73,7 +77,6 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   implicit val domainFormatImplicit = domainFormat
   implicit val idFormatImplicit = idFormat
 
-
   import reactivemongo.core.commands.GetLastError
 
   lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
@@ -89,6 +92,12 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   override def count(implicit ec: ExecutionContext): Future[Int] = mongo().command(Count(collection.name))
 
   override def removeAll(implicit ec: ExecutionContext): Future[LastError] = collection.remove(Json.obj(), GetLastError(), false)
+
+  override def removeById(id: ID)(implicit ec: ExecutionContext): Future[LastError] = collection.remove(Json.obj("_id" -> id), GetLastError(), false)
+
+  override def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[LastError] = {
+    collection.remove(Json.obj(query : _*), GetLastError(), false)
+  }
 
   override def drop(implicit ec: ExecutionContext): Future[Boolean] = collection.drop.recover {
     case _ => false

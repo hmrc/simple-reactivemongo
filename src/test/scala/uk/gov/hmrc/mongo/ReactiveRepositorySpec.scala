@@ -114,6 +114,49 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
   }
 
+  "removeById" should {
+
+    "remove the identified record" in {
+      val e1 = TestObject("1")
+
+      await(repository.save(e1))
+
+      await(repository.removeById(e1.id)).inError shouldBe false
+
+      val result: Option[TestObject] = await(repository.findById(e1.id))
+      result should be(None)
+    }
+  }
+
+
+  "remove with provided query" should {
+
+    "remove by one field" in {
+      val e1 = TestObject("1", Some("used to identify"))
+
+      await(repository.save(e1))
+
+      await(repository.remove("anotherField" -> "used to identify")).inError shouldBe false
+
+      val result: Option[TestObject] = await(repository.findById(e1.id))
+      result should be(None)
+    }
+
+    "remove by mulitple field query" in {
+
+      import ReactiveMongoFormats.objectIdFormats
+
+      val e1 = TestObject("1", Some("used to identify"))
+
+      await(repository.save(e1))
+
+      await(repository.remove("_id" -> e1.id, "anotherField" -> "used to identify")).inError shouldBe false
+
+      val result: Option[TestObject] = await(repository.findById(e1.id))
+      result should be(None)
+    }
+  }
+
   "saveOrUpdate" should {
 
     "update an existing record" in {
