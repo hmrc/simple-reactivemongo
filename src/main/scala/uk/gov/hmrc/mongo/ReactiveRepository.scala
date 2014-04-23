@@ -41,7 +41,14 @@ case class Updated[A](previousValue: A, savedValue: A) extends UpdateType[A]
 
 case class DatabaseUpdate[A](writeResult: LastError, updateType: UpdateType[A])
 
-trait Repository[A <: Any, ID <: Any] {
+trait CurrentTime {
+
+  protected lazy val zone = DateTimeZone.UTC
+
+  def withCurrentTime[A](f: (DateTime) => A) = f(DateTime.now.withZone(zone))
+}
+
+trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
   def findAll(implicit ec: ExecutionContext): Future[List[A]] = ???
 
@@ -62,8 +69,6 @@ trait Repository[A <: Any, ID <: Any] {
   def save(entity: A)(implicit ec: ExecutionContext): Future[LastError] = ???
 
   def insert(entity: A)(implicit ec: ExecutionContext): Future[LastError] = ???
-
-  def withCurrentTime[A](f: (DateTime) => A) = f(DateTime.now.withZone(DateTimeZone.UTC))
 
   def saveOrUpdate(findQuery: => Future[Option[A]], ifNotFound: => Future[A], modifiers: (A) => A)(implicit ec: ExecutionContext): Future[DatabaseUpdate[A]] = ???
 
