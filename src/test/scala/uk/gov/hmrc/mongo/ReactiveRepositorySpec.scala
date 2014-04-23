@@ -18,9 +18,10 @@ package uk.gov.hmrc.mongo
 import reactivemongo.bson.BSONObjectID
 import org.scalatest.{BeforeAndAfterEach, WordSpec, Matchers}
 import scala.concurrent.Future
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import reactivemongo.core.errors.DatabaseException
 import scala.annotation.tailrec
+import org.joda.time.DateTime
 
 case class NestedModel(a: String, b: String)
 
@@ -30,7 +31,13 @@ case class TestObject(aField: String,
                       nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
                       modifiedDetails: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
                       jsValue: Option[JsValue] = None,
-                      id: BSONObjectID = BSONObjectID.generate)
+                      id: BSONObjectID = BSONObjectID.generate) {
+
+  def markUpdated(implicit updatedTime: DateTime) = copy(
+    modifiedDetails = modifiedDetails.updated(updatedTime)
+  )
+
+}
 
 object TestObject {
 
@@ -54,7 +61,7 @@ class SimpleTestRepository(implicit mc: MongoConnector)
   }
 }
 
-class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting {
+class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime {
 
   val repository = new SimpleTestRepository
 
@@ -168,7 +175,16 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       await(repository.save(e1))
       val originalSave = await(repository.findById(e1.id))
 
-      val result = await(repository.saveOrUpdate(repository.findById(e1.id), Future.successful(TestObject("2")), _.copy(aField = "3")))
+      val result = await(
+        withCurrentTime {
+          implicit time =>
+            repository.saveOrUpdate(
+              findQuery = repository.findById(e1.id),
+              ifNotFound = Future.successful(TestObject("2")),
+              modifiers = _.markUpdated.copy(aField = "3")
+            )
+        }
+      )
 
       result.updateType match {
         case Updated(_, _) => // ok
