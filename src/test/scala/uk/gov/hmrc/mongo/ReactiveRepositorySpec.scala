@@ -56,14 +56,15 @@ class SimpleTestRepository(implicit mc: MongoConnector)
   import reactivemongo.api.indexes.IndexType
   import reactivemongo.api.indexes.Index
 
-  override def ensureIndexes() {
+  override def ensureIndexes() = {
     collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
+      .map(result => Map("aFieldUniqueIdx" -> result))
   }
 }
 
 class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime {
 
-  val repository = new SimpleTestRepository
+  var repository = new SimpleTestRepository
 
   override def beforeEach() {
     await(repository.removeAll)
@@ -215,8 +216,8 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
   }
 
   "Indexes" should {
-    "be created via ensureIndexes method" in {
-
+    "be created when the repo is started via ensureIndexes method" in {
+      await(repository.ensureIndexesResult)
       val uniqueField = "i_am_a_unique_field"
       val saveWithoutError = TestObject(uniqueField)
 
@@ -227,7 +228,12 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       intercept[DatabaseException] {
         await(repository.save(shouldNotSave))
       }
-
+    }
+    "return the status of their creation" in {
+      await(repository.collection.drop())
+      repository = new SimpleTestRepository
+      await(repository.ensureIndexesResult) should be (Map("aFieldUniqueIdx" -> true))
+      await(repository.ensureIndexes()) should be (Map("aFieldUniqueIdx" -> false))
     }
   }
 

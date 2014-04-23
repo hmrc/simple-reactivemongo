@@ -28,7 +28,7 @@ trait Indexes {
 
   lazy implicit val ec = global
 
-  def ensureIndexes(): Unit = {}
+  def ensureIndexes(): Future[Map[String, Boolean]] = Future.successful(Map.empty)
 }
 
 sealed abstract class UpdateType[A] {
@@ -91,7 +91,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
 
-  ensureIndexes()
+  val ensureIndexesResult: Future[Map[String, Boolean]] = ensureIndexes()
 
   override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
     collection.find(Json.obj(query: _*)).cursor[A].collect[List]()
