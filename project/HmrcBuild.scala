@@ -23,7 +23,7 @@ object HmrcBuild extends Build {
     )
   }
 
-  lazy val root = Project(nameApp, file("."), settings = DefaultBuildSettings(nameApp, versionApp)() ++ Seq(
+  lazy val root = Project(nameApp, file("."), settings = DefaultBuildSettings(nameApp, versionApp, targetJvm = "jvm-1.7")() ++ Seq(
     libraryDependencies ++= appDependencies,
     publishArtifact in Test := true,
     resolvers := Seq(
@@ -47,7 +47,7 @@ object Dependencies {
 
   sealed abstract class Test(scope: String) {
 
-    val scalaTest = "org.scalatest" %% "scalatest" % "2.1.3" % scope
+    val scalaTest = "org.scalatest" %% "scalatest" % "2.1.4" % scope
     val junit = "junit" % "junit" % "4.11" % scope
     val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % scope
   }
