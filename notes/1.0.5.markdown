@@ -1,0 +1,2 @@
+* addition of MapBSONReader and MapBSONWriter submitted by Ugo Bataillard
+* refactor Indexes#ensureIndexes to return Future[_]
