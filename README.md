@@ -60,10 +60,25 @@ object TestObject {
 class SimpleTestRepository(implicit mc: MongoConnector)
       extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
-  override def ensureIndexes() {
+  override def ensureIndexes() = {
     collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
   }
 
+}
+
+```
+
+The `ensureIndexes` method is defined as returning `Future[_]`, leaving it up to your implementation to define the contents of the returned future.
+When a single index is being created, you will often just propagate the future returned by the underlying ReactiveMongo call, as above.
+
+If multiple indexes are to be created, you may want to use `Future.sequence` to combine results, for example:
+
+```scala
+
+override def ensureIndexes() = {
+  val index1 = collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
+  val index2 = collection.indexesManager.ensure(Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex")))
+  Future.sequence(Seq(index1, index2))
 }
 
 ```

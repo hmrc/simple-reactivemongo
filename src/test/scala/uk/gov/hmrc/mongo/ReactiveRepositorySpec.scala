@@ -20,7 +20,6 @@ import org.scalatest.{BeforeAndAfterEach, WordSpec, Matchers}
 import scala.concurrent.Future
 import play.api.libs.json.{JsValue, Json}
 import reactivemongo.core.errors.DatabaseException
-import scala.annotation.tailrec
 import org.joda.time.DateTime
 
 case class NestedModel(a: String, b: String)
@@ -56,8 +55,11 @@ class SimpleTestRepository(implicit mc: MongoConnector)
   import reactivemongo.api.indexes.IndexType
   import reactivemongo.api.indexes.Index
 
-  override def ensureIndexes() {
-    collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
+  override def ensureIndexes() = {
+    val index1 = collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
+    val index2 = collection.indexesManager.ensure(Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex")))
+
+    Future.sequence(Seq(index1, index2))
   }
 }
 
@@ -224,10 +226,21 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       val shouldNotSave = TestObject(uniqueField)
 
-      intercept[DatabaseException] {
-        await(repository.save(shouldNotSave))
-      }
+      a [DatabaseException] should be thrownBy await(repository.save(shouldNotSave))
+    }
 
+    "allow test code to await all indexes to be created after recreating the collection" in {
+
+      val uniqueField = "i_am_a_unique_field"
+      val saveWithoutError = TestObject(uniqueField)
+      val shouldNotSave = TestObject(uniqueField)
+
+      await(repository.drop)
+      await(repository.ensureIndexes())
+
+      await(repository.save(saveWithoutError))
+
+      a [DatabaseException] should be thrownBy await(repository.save(shouldNotSave))
     }
   }
 
