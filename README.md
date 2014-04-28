@@ -68,6 +68,21 @@ class SimpleTestRepository(implicit mc: MongoConnector)
 
 ```
 
+The `ensureIndexes` method is defined as returning `Future[_]`, leaving it up to your implementation to define the contents of the returned future.
+When a single index is being created, you will often just propagate the future returned by the underlying ReactiveMongo call, as above.
+
+If multiple indexes are to be created, you may want to use `Future.sequence` to combine results, for example:
+
+```scala
+
+override def ensureIndexes() = {
+  val index1 = collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
+  val index2 = collection.indexesManager.ensure(Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex")))
+  Future.sequence(Seq(index1, index2))
+}
+
+```
+
 #### Built-in JSON converters ([Formats](http://www.playframework.com/documentation/2.2.x/ScalaJsonCombinators)) for often used types ###
 
 Formats for BSONObjectId and Joda time classes are implemented (see [ReactiveMongoFormats](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/uk/gov/hmrc/mongo/ReactiveMongoFormats.scala))
