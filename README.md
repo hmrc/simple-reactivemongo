@@ -60,7 +60,7 @@ object TestObject {
 class SimpleTestRepository(implicit mc: MongoConnector)
       extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
-  override def ensureIndexes() {
+  override def ensureIndexes() = {
     collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
   }
 

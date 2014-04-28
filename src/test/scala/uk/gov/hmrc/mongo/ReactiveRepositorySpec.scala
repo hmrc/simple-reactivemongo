@@ -56,7 +56,7 @@ class SimpleTestRepository(implicit mc: MongoConnector)
   import reactivemongo.api.indexes.IndexType
   import reactivemongo.api.indexes.Index
 
-  override def ensureIndexes() {
+  override def ensureIndexes() = {
     collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
   }
 }
