@@ -54,7 +54,7 @@ trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
   def findById(id: ID)(implicit ec: ExecutionContext): Future[Option[A]] = ???
 
-  def find(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]]
+  def find(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = ???
 
   def count(implicit ec: ExecutionContext): Future[Int] = ???
 
