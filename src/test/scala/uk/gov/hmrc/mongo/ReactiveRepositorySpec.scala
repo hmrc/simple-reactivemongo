@@ -30,6 +30,7 @@ case class TestObject(aField: String,
                       nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
                       modifiedDetails: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
                       jsValue: Option[JsValue] = None,
+                      location : Tuple2[Double, Double] = (0.0, 0.0),
                       id: BSONObjectID = BSONObjectID.generate) {
 
   def markUpdated(implicit updatedTime: DateTime) = copy(
@@ -42,9 +43,12 @@ object TestObject {
 
   import ReactiveMongoFormats.{objectIdFormats, mongoEntity}
 
-  implicit val nestedModelformats = Json.format[NestedModel]
-
   implicit val formats = mongoEntity {
+
+    implicit val locationFormat = TupleFormats.tuple2Format[Double, Double]
+
+    implicit val nestedModelformats = Json.format[NestedModel]
+
     Json.format[TestObject]
   }
 }
@@ -269,6 +273,23 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       found.size shouldBe 1
 
       found.head.id shouldBe saved.id
+    }
+  }
+
+
+  "Location field" should {
+
+    "be stored" in {
+
+      val coordinates : Tuple2[Double, Double] = (51.512787, -0.090796)
+      val saved = TestObject("storing a tuple2", location = coordinates)
+
+      await(repository.save(saved))
+
+      val result: Option[TestObject] = await(repository.findById(saved.id))
+      result should not be None
+
+      result.get.location shouldBe coordinates
     }
   }
 
