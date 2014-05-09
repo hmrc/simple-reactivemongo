@@ -22,24 +22,10 @@ import scala.Some
 import reactivemongo.api.QueryOpts
 import play.api.libs.json.Json.JsValueWrapper
 import reactivemongo.bson.BSONDocument
+import reactivemongo.api.indexes.Index
+import reactivemongo.api.indexes.IndexType.Geo2D
+import reactivemongo.json.collection.JSONCollection
 
-
-trait GeoJSON[A] {
-  val `type` : String
-  val coordinates : A
-}
-
-object GeoJSON {
-
-  import play.api.libs.json._
-  import play.api.libs.json.Reads._
-
-  case class Point(coordinates : Tuple2[Double, Double], `type` : String = "Point") extends GeoJSON[Tuple2[Double, Double]]
-
-  implicit val pointCoordinateFormat = TupleFormats.tuple2Format[Double, Double]
-
-  implicit val pointFormat = Json.format[Point]
-}
 
 /*
  * The 2d index supports data stored as legacy coordinate pairs and is intended for use in MongoDB 2.2 and earlier.
@@ -54,10 +40,14 @@ trait LegacyGeospatial[A, ID] {
 
   lazy val LocationField = "loc"
 
-  override def ensureIndexes(): Future[_] = self.collection.indexesManager.ensure(Index(Seq((LocationField, Geo2D)), Some("geo2DIdx")))
+  lazy val geo2DIndex = Index(Seq((LocationField, Geo2D)), Some("geo2DIdx"))
 
-  def near(lon: Double, lat: Double, limit: Int = 100) = {
-    val s = Json.obj(LocationField -> Json.obj("$near" -> Json.arr(lon, lat)))
-    collection.find(s).options(QueryOpts(batchSizeN = limit)).cursor[A].collect[List]()
-  }
+  def near(lon: Double, lat: Double, limit: Int = 100) = collection.find(
+    Json.obj(
+      LocationField -> Json.obj(
+        "$near" -> Json.arr(lon, lat)
+      )
+    )
+  ).options(QueryOpts(batchSizeN = limit)).cursor[A].collect[List]()
+
 }

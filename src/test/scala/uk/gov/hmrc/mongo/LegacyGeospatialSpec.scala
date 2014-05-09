@@ -3,6 +3,7 @@ package uk.gov.hmrc.mongo
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import reactivemongo.bson.BSONObjectID
 import play.api.libs.json.Json
+import scala.concurrent.Future
 
 case class Place(loc : Coordinates, id: BSONObjectID = BSONObjectID.generate)
 object Place{
@@ -18,7 +19,10 @@ object Place{
 
 class LegacyGeospatialTestRepository(implicit mc: MongoConnector)
   extends ReactiveRepository[Place, BSONObjectID]("lagacyGeospatialTestRepository", mc.db, Place.formats, ReactiveMongoFormats.objectIdFormats)
-  with LegacyGeospatial[Place, BSONObjectID]
+  with LegacyGeospatial[Place, BSONObjectID]{
+
+  override def ensureIndexes(): Future[_] = collection.indexesManager.ensure(geo2DIndex)
+}
 
 
 class LegacyGeospatialSpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting {
