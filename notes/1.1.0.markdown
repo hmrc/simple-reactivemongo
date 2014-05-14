@@ -1,0 +1,3 @@
+* increment supported Play version to 2.2.3
+* addition of Tuple2 format written by Alexander Jarvis (https://gist.github.com/alexanderjarvis/4595298)
+* basic geospatial function... more to come

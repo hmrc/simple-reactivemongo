@@ -20,8 +20,8 @@ In your project/Build.scala:
 
 ```scala
 libraryDependencies ++= Seq(
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "1.0.1",
-  "com.typesafe.play" %% "play-json" % "2.2.2" //supports from 2.1.0
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "1.1.0",
+  "com.typesafe.play" %% "play-json" % "2.2.3" //supports from 2.1.0
 )
 ```
 
@@ -32,44 +32,60 @@ Create a `case class` that represents to serialise to mongo.
 Create [JSON Read/Write](http://www.playframework.com/documentation/2.2.x/ScalaJsonCombinators) converters. Or if you are doing nothing special create a companion object for the case class
 with an implicit member set by play.api.libs.json.Json.format[A]
 
-Extend `ResponsiveRepository` which will provide you with some commonly used functionality.
+Extend [ResponsiveRepository](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/uk/gov/hmrc/mongo/ReactiveRepository.scala) which will provide you with some commonly used functionality.
 
 If the repository requires any indexes override ensureIndexes() and add them to this method.
 
 If you prefer to drop the underscore for the 'id' field in the domain case class then wrap the domain formats in `ReactiveMongoFormats.mongoEntity`
 
+
 ```scala
 
 case class TestObject(aField: String,
                       anotherField: Option[String] = None,
-                      optionalCollection : Option[List[NestedModel]] = None,
-                      nestedMapOfCollections : Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
-                      crud: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
-                      id: BSONObjectID = BSONObjectID.generate)
+                      optionalCollection: Option[List[NestedModel]] = None,
+                      nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
+                      modifiedDetails: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
+                      jsValue: Option[JsValue] = None,
+                      location : Tuple2[Double, Double] = (0.0, 0.0),
+                      id: BSONObjectID = BSONObjectID.generate) {
+
+  def markUpdated(implicit updatedTime: DateTime) = copy(
+    modifiedDetails = modifiedDetails.updated(updatedTime)
+  )
+
+}
 
 object TestObject {
+
   import ReactiveMongoFormats.{objectIdFormats, mongoEntity}
 
-  implicit val nestedModelformats = Json.format[NestedModel]
+  implicit val formats = mongoEntity {
 
-  implicit val formats = mongoEntity{
+    implicit val locationFormat = TupleFormats.tuple2Format[Double, Double]
+
+    implicit val nestedModelformats = Json.format[NestedModel]
+
     Json.format[TestObject]
   }
 }
 
 class SimpleTestRepository(implicit mc: MongoConnector)
-      extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
+  extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
+
+  import reactivemongo.api.indexes.IndexType
+  import reactivemongo.api.indexes.Index
 
   override def ensureIndexes() = {
     collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
   }
-
 }
 
 ```
+(See [ReactiveRepositorySpec](https://github.com/hmrc/simple-reactivemongo/blob/master/src/test/scala/uk/gov/hmrc/mongo/ReactiveRepositorySpec.scala) for example usage)
 
-The `ensureIndexes` method is defined as returning `Future[_]`, leaving it up to your implementation to define the contents of the returned future.
-When a single index is being created, you will often just propagate the future returned by the underlying ReactiveMongo call, as above.
+The `ensureIndexes` method is defined as returning `Future[_]`, leaving it up to your implementation to define the contents of the returned Future.
+When a single index is being created, you will often just propagate the Future returned by the underlying ReactiveMongo call, as above.
 
 If multiple indexes are to be created, you may want to use `Future.sequence` to combine results, for example:
 
