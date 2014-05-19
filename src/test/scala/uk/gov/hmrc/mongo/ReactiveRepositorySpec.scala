@@ -21,6 +21,7 @@ import scala.concurrent.Future
 import play.api.libs.json.{JsValue, Json}
 import reactivemongo.core.errors.DatabaseException
 import org.joda.time.DateTime
+import uk.gov.hmrc.mongo.json.{TupleFormats, ReactiveMongoFormats}
 
 case class NestedModel(a: String, b: String)
 

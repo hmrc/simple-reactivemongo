@@ -1,16 +1,17 @@
-package uk.gov.hmrc.mongo
+package uk.gov.hmrc.mongo.geospatial
 
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import reactivemongo.bson.BSONObjectID
 import play.api.libs.json.Json
 import scala.concurrent.Future
+import uk.gov.hmrc.mongo.{ReactiveRepository, MongoConnector, Awaiting, MongoSpecSupport}
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 case class Place(loc : Coordinates, id: BSONObjectID = BSONObjectID.generate)
 object Place{
 
   val formats = ReactiveMongoFormats.mongoEntity({
-    import Coordinates.formats
-    import BSONObjectIdFormats._
+    import uk.gov.hmrc.mongo.json.BSONObjectIdFormats._
 
     Json.format[Place]
   })

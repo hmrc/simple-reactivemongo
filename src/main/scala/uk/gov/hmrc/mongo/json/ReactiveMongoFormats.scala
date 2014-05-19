@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.gov.hmrc.mongo
+package uk.gov.hmrc.mongo.json
 
 import play.api.libs.json._
 import org.joda.time.{DateTimeZone, DateTime, LocalDateTime}

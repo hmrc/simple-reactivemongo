@@ -1,6 +1,7 @@
-package uk.gov.hmrc.mongo
+package uk.gov.hmrc.mongo.geospatial
 
 import play.api.libs.json.{Format, JsArray, Writes}
+import uk.gov.hmrc.mongo.json.TupleFormats
 
 
 case class Coordinates(lon : Double, lat : Double) {

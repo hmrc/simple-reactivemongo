@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.gov.hmrc.mongo
+package uk.gov.hmrc.mongo.json
 
 /**
  * Thanks goes to Alexander Jarvis for his Gist (https://gist.github.com/alexanderjarvis/4595298)

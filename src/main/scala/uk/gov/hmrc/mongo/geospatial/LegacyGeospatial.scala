@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.gov.hmrc.mongo
+package uk.gov.hmrc.mongo.geospatial
 
-import scala.concurrent.Future
 import play.api.libs.json._
-import scala.Tuple2
 import scala.Some
 import reactivemongo.api.QueryOpts
-import play.api.libs.json.Json.JsValueWrapper
-import reactivemongo.bson.BSONDocument
-import reactivemongo.api.indexes.Index
-import reactivemongo.api.indexes.IndexType.Geo2D
-import reactivemongo.json.collection.JSONCollection
+import uk.gov.hmrc.mongo.ReactiveRepository
 
 
 /*
