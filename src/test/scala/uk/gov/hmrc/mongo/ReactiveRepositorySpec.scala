@@ -20,7 +20,7 @@ import org.scalatest.{BeforeAndAfterEach, WordSpec, Matchers}
 import scala.concurrent.Future
 import play.api.libs.json.{JsValue, Json}
 import reactivemongo.core.errors.DatabaseException
-import org.joda.time.DateTime
+import org.joda.time.{DateTimeZone, LocalDate, DateTime}
 import uk.gov.hmrc.mongo.json.{TupleFormats, ReactiveMongoFormats}
 
 case class NestedModel(a: String, b: String)
@@ -32,6 +32,7 @@ case class TestObject(aField: String,
                       modifiedDetails: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
                       jsValue: Option[JsValue] = None,
                       location : Tuple2[Double, Double] = (0.0, 0.0),
+                      date: LocalDate = LocalDate.now(DateTimeZone.UTC),
                       id: BSONObjectID = BSONObjectID.generate) {
 
   def markUpdated(implicit updatedTime: DateTime) = copy(
@@ -42,7 +43,7 @@ case class TestObject(aField: String,
 
 object TestObject {
 
-  import ReactiveMongoFormats.{objectIdFormats, mongoEntity}
+  import ReactiveMongoFormats.{objectIdFormats, localDateFormats, mongoEntity}
 
   implicit val formats = mongoEntity {
 

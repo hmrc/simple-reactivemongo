@@ -16,12 +16,22 @@
 package uk.gov.hmrc.mongo.json
 
 import play.api.libs.json._
-import org.joda.time.{DateTimeZone, DateTime, LocalDateTime}
+import org.joda.time.{LocalDate, DateTimeZone, DateTime, LocalDateTime}
 import reactivemongo.bson.BSONObjectID
 
 object ReactiveMongoFormats extends ReactiveMongoFormats
 
 trait ReactiveMongoFormats {
+
+  implicit val localDateRead: Reads[LocalDate] =
+    (__ \ "$date").read[Long].map { date => new LocalDate(date, DateTimeZone.UTC) }
+
+
+  implicit val localDateWrite: Writes[LocalDate] = new Writes[LocalDate] {
+    def writes(date: LocalDate): JsValue = Json.obj(
+      "$date" -> date.toDateTimeAtStartOfDay(DateTimeZone.UTC).getMillis
+    )
+  }
 
   implicit val localDateTimeRead: Reads[LocalDateTime] =
     (__ \ "$date").read[Long].map { dateTime => new LocalDateTime(dateTime, DateTimeZone.UTC) }
@@ -59,6 +69,7 @@ trait ReactiveMongoFormats {
 
   implicit val objectIdFormats = Format(objectIdRead, objectIdWrite)
   implicit val dateTimeFormats = Format(dateTimeRead, dateTimeWrite)
+  implicit val localDateFormats = Format(localDateRead, localDateWrite)
   implicit val localDateTimeFormats = Format(localDateTimeRead, localDateTimeWrite)
 
 
