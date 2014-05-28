@@ -1,1 +1,2 @@
 * added format implicits for LocalDate
+* breaking change due to refactoring associated classes into json and geospatial packages
