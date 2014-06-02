@@ -13,11 +13,11 @@ object HmrcBuild extends Build {
     import Dependencies._
 
     Seq(
+      Compile.reactiveMongoJson,
       Compile.reactiveMongo,
       Compile.playJson,
       Compile.nscalaTime,
 
-      Test.junit,
       Test.scalaTest,
       Test.pegdown
     )
@@ -40,6 +40,7 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
+    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "0.1.0-SNAPSHOT"
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.0"
     val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.2.3]" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.0.0"
@@ -47,8 +48,7 @@ object Dependencies {
 
   sealed abstract class Test(scope: String) {
 
-    val scalaTest = "org.scalatest" %% "scalatest" % "2.1.5" % scope
-    val junit = "junit" % "junit" % "4.11" % scope
+    val scalaTest = "org.scalatest" %% "scalatest" % "2.1.7" % scope
     val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % scope
   }
 
