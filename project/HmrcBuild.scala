@@ -40,7 +40,7 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
-    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "0.1.0-SNAPSHOT"
+    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "0.1.0"
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.0"
     val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.2.3]" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.2.0"
