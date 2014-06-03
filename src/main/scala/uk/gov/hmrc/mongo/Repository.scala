@@ -71,6 +71,4 @@ trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
   def insert(entity: A)(implicit ec: ExecutionContext): Future[LastError] = ???
 
-  def saveOrUpdate(findQuery: => Future[Option[A]], ifNotFound: => Future[A], modifiers: (A) => A)(implicit ec: ExecutionContext): Future[DatabaseUpdate[A]] = ???
-
 }

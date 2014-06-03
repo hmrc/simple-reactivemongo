@@ -175,53 +175,6 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
     }
   }
 
-  "saveOrUpdate" should {
-
-    "update an existing record" in {
-      val e1 = TestObject("1")
-
-      await(repository.save(e1))
-      val originalSave = await(repository.findById(e1.id))
-
-      val result = await(
-        withCurrentTime {
-          implicit time =>
-            repository.saveOrUpdate(
-              findQuery = repository.findById(e1.id),
-              ifNotFound = Future.successful(TestObject("2")),
-              modifiers = _.markUpdated.copy(aField = "3")
-            )
-        }
-      )
-
-      result.updateType match {
-        case Updated(_, _) => // ok
-        case Saved(_) => fail
-      }
-
-      val updatedRecord = await(repository.findById(e1.id))
-      updatedRecord.get.aField shouldBe "3"
-
-      updatedRecord.get.modifiedDetails should not be originalSave.get.modifiedDetails
-    }
-
-    "return a default value, with modifiers applied, if the record is not found" in {
-      val e1 = TestObject("new")
-
-      val modifiers: (TestObject) => TestObject = _.copy(aField = "3")
-
-      val result = await(repository.saveOrUpdate(repository.findById(BSONObjectID.generate), Future.successful(e1), modifiers))
-
-      result.updateType match {
-        case Updated(_, _) => fail
-        case Saved(s) => s.aField shouldBe "3"
-      }
-
-      val updatedRecord = await(repository.findById(e1.id))
-      updatedRecord.get.aField shouldBe "3"
-    }
-  }
-
   "Indexes" should {
     "be created via ensureIndexes method" in {
 

@@ -70,21 +70,4 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   override def insert(entity: A)(implicit ec: ExecutionContext) = collection.insert(entity)
 
-  override def saveOrUpdate(findQuery: => Future[Option[A]], ifNotFound: => Future[A], modifiers: (A) => A = a => a)(implicit ec: ExecutionContext): Future[DatabaseUpdate[A]] = {
-    withCurrentTime {
-      implicit time =>
-        val updateTypeF = findQuery.flatMap {
-          case Some(existingValue) => Future.successful(Updated(existingValue, modifiers(existingValue)))
-          case None => ifNotFound.map(newValue => Saved(modifiers(newValue))): Future[UpdateType[A]]
-        }
-
-        updateTypeF.flatMap {
-          updateType =>
-            save(updateType.savedValue).map {
-              lastErr =>
-                DatabaseUpdate(writeResult = lastErr, updateType)
-            }
-        }
-    }
-  }
 }

@@ -1,0 +1,2 @@
+* refactor out reactivemongo.json package to [reactivemongo-json](https://github.com/hmrc/reactivemongo-json)
+* removal of Repository#saveOrUpdate as it has a specific use case where atomicity is not an issue. It has a specific use case where atomicity is not an issue. It was felt that if this use case was not acknowledged and used where atomicity is required it we only cause unnecessary problems.
