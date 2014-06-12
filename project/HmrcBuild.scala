@@ -7,7 +7,7 @@ object HmrcBuild extends Build {
   import uk.gov.hmrc.DefaultBuildSettings
 
   val nameApp = "simple-reactivemongo"
-  val versionApp = "1.3.0"
+  val versionApp = "1.4.0-SNAPSHOT"
 
   val appDependencies = {
     import Dependencies._
@@ -40,7 +40,7 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
-    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "0.1.0"
+    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "0.2.0"
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.0"
     val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.2.3]" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.2.0"
@@ -48,7 +48,7 @@ object Dependencies {
 
   sealed abstract class Test(scope: String) {
 
-    val scalaTest = "org.scalatest" %% "scalatest" % "2.1.7" % scope
+    val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % scope
     val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % scope
   }
 
