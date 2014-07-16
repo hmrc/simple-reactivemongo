@@ -7,7 +7,7 @@ object HmrcBuild extends Build {
   import uk.gov.hmrc.DefaultBuildSettings
 
   val nameApp = "simple-reactivemongo"
-  val versionApp = "1.5.0-SNAPSHOT"
+  val versionApp = "2.0.0-SNAPSHOT"
 
   val appDependencies = {
     import Dependencies._
@@ -23,7 +23,7 @@ object HmrcBuild extends Build {
     )
   }
 
-  lazy val root = Project(nameApp, file("."), settings = DefaultBuildSettings(nameApp, versionApp, targetJvm = "jvm-1.7")() ++ Seq(
+  lazy val root = Project(nameApp, file("."), settings = DefaultBuildSettings(nameApp, versionApp, scalaversion = "2.11.1", targetJvm = "jvm-1.7")() ++ Seq(
     libraryDependencies ++= appDependencies,
     publishArtifact in Test := true,
     resolvers := Seq(
@@ -31,7 +31,8 @@ object HmrcBuild extends Build {
       Opts.resolver.sonatypeSnapshots,
       "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/",
       "typesafe-snapshots" at "http://repo.typesafe.com/typesafe/snapshots/"
-    )
+    ),
+    crossScalaVersions := Seq("2.11.1", "2.10.4")
   ) ++ SonatypeBuild()
   )
 
@@ -40,16 +41,16 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
-    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "0.2.0"
-    val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.0"
-    val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.2.3]" % "provided"
-    val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.2.0"
+    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.0.0-SNAPSHOT" cross CrossVersion.binary
+    val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.5.akka23-SNAPSHOT" cross CrossVersion.binary
+    val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.3.1]" % "provided" cross CrossVersion.binary
+    val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.2.0" cross CrossVersion.binary
   }
 
   sealed abstract class Test(scope: String) {
 
-    val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % scope
-    val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % scope
+    val scalaTest = "org.scalatest" %% "scalatest" % "2.2.0" % scope cross CrossVersion.binary
+    val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % scope cross CrossVersion.Disabled
   }
 
   object Test extends Test("test")
