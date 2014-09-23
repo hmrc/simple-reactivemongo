@@ -23,12 +23,7 @@ import org.joda.time.{DateTimeZone, DateTime}
 import reactivemongo.json.collection.JSONCollection
 
 trait Indexes {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
-
-  lazy implicit val ec = global
-
-  def ensureIndexes(): Future[_] = Future.successful(Unit)
+  def ensureIndexes(implicit ec: ExecutionContext): Future[_] = Future.successful(Unit)
 }
 
 sealed abstract class UpdateType[A] {

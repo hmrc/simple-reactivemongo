@@ -31,6 +31,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
   extends Repository[A, ID] with Indexes {
 
+  import scala.concurrent.ExecutionContext.Implicits.global
   import play.api.libs.json.Json.JsValueWrapper
 
   implicit val domainFormatImplicit = domainFormat
@@ -40,7 +41,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
 
-  ensureIndexes()
+  ensureIndexes
 
   override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
     collection.find(Json.obj(query: _*)).cursor[A].collect[List]()

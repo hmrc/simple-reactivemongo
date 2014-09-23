@@ -17,7 +17,7 @@ package uk.gov.hmrc.mongo
 
 import reactivemongo.bson.BSONObjectID
 import org.scalatest.{BeforeAndAfterEach, WordSpec, Matchers}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import play.api.libs.json.{JsValue, Json}
 import reactivemongo.core.errors.DatabaseException
 import org.joda.time.{DateTimeZone, LocalDate, DateTime}
@@ -58,10 +58,11 @@ object TestObject {
 class SimpleTestRepository(implicit mc: MongoConnector)
   extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
+  import scala.concurrent.ExecutionContext.Implicits.global
   import reactivemongo.api.indexes.IndexType
   import reactivemongo.api.indexes.Index
 
-  override def ensureIndexes() = {
+  override def ensureIndexes(implicit ec: ExecutionContext) = {
     val index1 = collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
     val index2 = collection.indexesManager.ensure(Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex")))
 
@@ -195,7 +196,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       val shouldNotSave = TestObject(uniqueField)
 
       await(repository.drop)
-      await(repository.ensureIndexes())
+      await(repository.ensureIndexes)
 
       await(repository.save(saveWithoutError))
 
