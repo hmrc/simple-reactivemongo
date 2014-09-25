@@ -51,7 +51,7 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
-    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.0.0"
+    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.1.0"
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.5.akka23-SNAPSHOT"
     val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.3.2]" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.2.0"
@@ -71,27 +71,11 @@ object Dependencies {
 
 
 object SonatypeBuild {
-  
-  private def sonatypeCredentials = (for {
-    username <- Option(System.getenv().get("SONATYPE_USERNAME"))
-    password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-  } yield credentials += Credentials(
-      "Sonatype Nexus Repository Manager",
-      "oss.sonatype.org",
-      username,
-      password)
-    ).getOrElse(credentials ++= Seq())
+
+  import xerial.sbt.Sonatype._
 
   def apply() = {
-    Seq(
-      sonatypeCredentials,
-      publishTo := {
-        val nexus = "https://oss.sonatype.org/"
-        if (isSnapshot.value)
-          Some("snapshots" at nexus + "content/repositories/snapshots")
-        else
-          Some("releases" at nexus + "service/local/staging/deploy/maven2")
-      },
+    sonatypeSettings ++ Seq(
       pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
         <licenses>
           <license>
