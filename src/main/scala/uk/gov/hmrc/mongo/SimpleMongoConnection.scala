@@ -37,9 +37,9 @@ trait SimpleMongoConnection {
   val channelsPerNode: Option[Int]
 
   lazy val helper = MongoConnection.parseURI(mongoConnectionUri) match {
-    case Success(MongoConnection.ParsedURI(hosts, Some(db), auth)) =>
+    case Success(MongoConnection.ParsedURI(hosts, options, ignoreOptions, Some(db), auth)) =>
       ReactiveMongoHelper(db, hosts.map(h => h._1 + ":" + h._2).toList, auth.toList, channelsPerNode, failoverStrategy)
-    case Success(MongoConnection.ParsedURI(_, None, _)) =>
+    case Success(MongoConnection.ParsedURI(_, _, _, None, _)) =>
       throw new Exception(s"Missing database name in mongodb.uri '$mongoConnectionUri'")
     case Failure(e) => throw new Exception(s"Invalid mongodb.uri '$mongoConnectionUri'", e)
   }
