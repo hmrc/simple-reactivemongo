@@ -15,15 +15,14 @@
  */
 package uk.gov.hmrc.mongo
 
-import reactivemongo.core.commands.{LastError, Count}
-import reactivemongo.api.DB
-import scala.concurrent.{Future, ExecutionContext}
-import play.api.libs.json.{Format, Json}
-import org.joda.time.{DateTimeZone, DateTime}
-import reactivemongo.json.collection.JSONCollection
+import org.joda.time.{DateTime, DateTimeZone}
+import reactivemongo.api.indexes.Index
+import reactivemongo.core.commands.LastError
+
+import scala.concurrent.{ExecutionContext, Future}
 
 trait Indexes {
-  def ensureIndexes(implicit ec: ExecutionContext): Future[_] = Future.successful(Unit)
+  def indexes: Seq[Index] = Seq.empty
 }
 
 sealed abstract class UpdateType[A] {
