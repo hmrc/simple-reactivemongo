@@ -34,7 +34,7 @@ with an implicit member set by play.api.libs.json.Json.format[A]
 
 Extend [ResponsiveRepository](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/uk/gov/hmrc/mongo/ReactiveRepository.scala) which will provide you with some commonly used functionality.
 
-If the repository requires any indexes override ensureIndexes() and add them to this method.
+If the repository requires any indexes override ```indexes: Seq[Index]``` to provide a sequence of indexes that will be applied. Any errors will be logged should they fail.
 
 If you prefer to drop the underscore for the 'id' field in the domain case class then wrap the domain formats in `ReactiveMongoFormats.mongoEntity`
 
@@ -76,28 +76,13 @@ class SimpleTestRepository(implicit mc: MongoConnector)
   import reactivemongo.api.indexes.IndexType
   import reactivemongo.api.indexes.Index
 
-  override def ensureIndexes() = {
-    collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
-  }
+  override def indexes: Seq[Index] = Seq(
+    Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true)
+  )
 }
 
 ```
 (See [ReactiveRepositorySpec](https://github.com/hmrc/simple-reactivemongo/blob/master/src/test/scala/uk/gov/hmrc/mongo/ReactiveRepositorySpec.scala) for example usage)
-
-The `ensureIndexes` method is defined as returning `Future[_]`, leaving it up to your implementation to define the contents of the returned Future.
-When a single index is being created, you will often just propagate the Future returned by the underlying ReactiveMongo call, as above.
-
-If multiple indexes are to be created, you may want to use `Future.sequence` to combine results, for example:
-
-```scala
-
-override def ensureIndexes() = {
-  val index1 = collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
-  val index2 = collection.indexesManager.ensure(Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex")))
-  Future.sequence(Seq(index1, index2))
-}
-
-```
 
 #### Built-in JSON converters ([Formats](http://www.playframework.com/documentation/2.2.x/ScalaJsonCombinators)) for often used types ###
 
