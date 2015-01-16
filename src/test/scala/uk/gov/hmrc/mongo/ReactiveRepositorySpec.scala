@@ -15,13 +15,17 @@
  */
 package uk.gov.hmrc.mongo
 
-import reactivemongo.bson.BSONObjectID
-import org.scalatest.{BeforeAndAfterEach, WordSpec, Matchers}
-import scala.concurrent.{ExecutionContext, Future}
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
+import ch.qos.logback.core.read.ListAppender
+import org.joda.time.{DateTime, DateTimeZone, LocalDate}
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.slf4j.LoggerFactory
 import play.api.libs.json.{JsValue, Json}
+import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.bson.BSONObjectID
 import reactivemongo.core.errors.DatabaseException
-import org.joda.time.{DateTimeZone, LocalDate, DateTime}
-import uk.gov.hmrc.mongo.json.{TupleFormats, ReactiveMongoFormats}
+import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
 
 case class NestedModel(a: String, b: String)
 
@@ -31,7 +35,7 @@ case class TestObject(aField: String,
                       nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
                       modifiedDetails: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
                       jsValue: Option[JsValue] = None,
-                      location : Tuple2[Double, Double] = (0.0, 0.0),
+                      location: Tuple2[Double, Double] = (0.0, 0.0),
                       date: LocalDate = LocalDate.now(DateTimeZone.UTC),
                       id: BSONObjectID = BSONObjectID.generate) {
 
@@ -58,21 +62,27 @@ object TestObject {
 class SimpleTestRepository(implicit mc: MongoConnector)
   extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-  import reactivemongo.api.indexes.IndexType
-  import reactivemongo.api.indexes.Index
+  override def indexes = Seq(
+    Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true),
+    Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex"))
+  )
+}
 
-  override def ensureIndexes(implicit ec: ExecutionContext) = {
-    val index1 = collection.indexesManager.ensure(Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true))
-    val index2 = collection.indexesManager.ensure(Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex")))
+class FailingIndexesTestRepository(implicit mc: MongoConnector)
+  extends ReactiveRepository[TestObject, BSONObjectID]("failingIndexesTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
-    Future.sequence(Seq(index1, index2))
-  }
+  override def indexes = Seq(
+    Index(Seq("aField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true),
+    Index(Seq("anotherField" -> IndexType.Ascending), name = Some("index2")),
+    Index(Seq("thisShouldFailField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true),
+    Index(Seq("thisShouldAlsoFailField" -> IndexType.Ascending), name = Some("index2"))
+  )
 }
 
 class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime {
 
   val repository = new SimpleTestRepository
+  val failingIndexesRepository = new FailingIndexesTestRepository
 
   override def beforeEach() {
     await(repository.removeAll)
@@ -161,9 +171,9 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       result should be(None)
     }
 
-    "remove by mulitple field query" in {
+    "remove by multiple field query" in {
 
-      import ReactiveMongoFormats.objectIdFormats
+      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
 
       val e1 = TestObject("1", Some("used to identify"))
 
@@ -176,21 +186,20 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
     }
   }
 
-  "Indexes" should {
-    "be created via ensureIndexes method" in {
+  "Creation of Indexes" should {
+    "should be done based on provided Indexes" in new LogCapturing {
+      await(repository.drop)
+      await(repository.collection.indexesManager.list()) shouldBe empty
 
-      val uniqueField = "i_am_a_unique_field"
-      val saveWithoutError = TestObject(uniqueField)
+      await(repository.ensureIndexes)
+      await(repository.save(TestObject("random_object")))
 
-      await(repository.save(saveWithoutError))
-
-      val shouldNotSave = TestObject(uniqueField)
-
-      a [DatabaseException] should be thrownBy await(repository.save(shouldNotSave))
+      val indexes = await(repository.collection.indexesManager.list()).map(f => f.name.getOrElse(""))
+      indexes should contain("aFieldUniqueIdx")
+      indexes should contain("anotherFieldIndex")
     }
 
-    "allow test code to await all indexes to be created after recreating the collection" in {
-
+    "mean that exceptions are thrown when saving a duplicate record on a unique index" in {
       val uniqueField = "i_am_a_unique_field"
       val saveWithoutError = TestObject(uniqueField)
       val shouldNotSave = TestObject(uniqueField)
@@ -201,6 +210,29 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       await(repository.save(saveWithoutError))
 
       a [DatabaseException] should be thrownBy await(repository.save(shouldNotSave))
+    }
+
+    "should not log errors when all are created successfully" in new LogCapturing {
+      withCaptureOfLoggingFrom[SimpleTestRepository] { logList =>
+        await(repository.drop)
+        await(repository.ensureIndexes)
+        await(repository.save(TestObject("random_object")))
+
+        logList shouldBe empty
+      }
+    }
+
+    "should log any error that arises when creating an index" in new LogCapturing {
+      withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
+        await(failingIndexesRepository.drop)
+        await(failingIndexesRepository.ensureIndexes)
+        await(failingIndexesRepository.save(TestObject("aValue", Some("anotherValue"))))
+
+        logList.size should be(2)
+        logList.foreach(
+          _.getMessage should be(failingIndexesRepository.message)
+        )
+      }
     }
   }
 
@@ -237,7 +269,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
     "be stored" in {
 
-      val coordinates : Tuple2[Double, Double] = (51.512787, -0.090796)
+      val coordinates: Tuple2[Double, Double] = (51.512787, -0.090796)
       val saved = TestObject("storing a tuple2", location = coordinates)
 
       await(repository.save(saved))
@@ -248,5 +280,25 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       result.get.location shouldBe coordinates
     }
   }
+}
 
+trait LogCapturing {
+
+  import scala.collection.JavaConverters._
+  import scala.reflect._
+
+  def withCaptureOfLoggingFrom[T: ClassTag](body: (=> List[ILoggingEvent]) => Any): Any = {
+    val logger = LoggerFactory.getLogger(classTag[T].runtimeClass).asInstanceOf[LogbackLogger]
+    withCaptureOfLoggingFrom(logger)(body)
+  }
+
+  def withCaptureOfLoggingFrom(logger: LogbackLogger)(body: (=> List[ILoggingEvent]) => Any): Any = {
+    val appender = new ListAppender[ILoggingEvent]()
+    appender.setContext(logger.getLoggerContext)
+    appender.start()
+    logger.addAppender(appender)
+    logger.setLevel(Level.ALL)
+    logger.setAdditive(true)
+    body(appender.list.asScala.toList)
+  }
 }

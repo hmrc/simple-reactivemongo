@@ -15,12 +15,17 @@
  */
 package uk.gov.hmrc.mongo
 
-import reactivemongo.core.commands.{LastError, Count}
-import reactivemongo.api.DB
-import scala.concurrent.{Future, ExecutionContext}
+import org.slf4j.LoggerFactory
+import ch.qos.logback.classic.Logger
+import reactivemongo.api.indexes.Index
 import play.api.libs.json.{Format, Json}
+import reactivemongo.api.DB
+import reactivemongo.core.commands.{Count, LastError}
 import reactivemongo.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 
 abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
@@ -31,15 +36,17 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
   extends Repository[A, ID] with Indexes {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
   import play.api.libs.json.Json.JsValueWrapper
+  import scala.concurrent.ExecutionContext.Implicits.global
+  import reactivemongo.core.commands.GetLastError
 
   implicit val domainFormatImplicit = domainFormat
   implicit val idFormatImplicit = idFormat
 
-  import reactivemongo.core.commands.GetLastError
-
   lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
+
+  protected val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  val message: String = "ensuring index failed"
 
   ensureIndexes
 
@@ -70,5 +77,17 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   override def save(entity: A)(implicit ec: ExecutionContext) = collection.save(entity)
 
   override def insert(entity: A)(implicit ec: ExecutionContext) = collection.insert(entity)
+
+  private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
+    collection.indexesManager.ensure(index).recover {
+      case t =>
+        logger.error(message, t)
+        false
+    }
+  }
+
+  def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
+    Future.sequence(indexes.map(ensureIndex))
+  }
 
 }
