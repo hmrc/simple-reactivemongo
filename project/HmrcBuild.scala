@@ -40,7 +40,7 @@ object HmrcBuild extends Build {
         "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/",
         "typesafe-snapshots" at "http://repo.typesafe.com/typesafe/snapshots/"
       ),
-      crossScalaVersions := Seq("2.11.2", "2.10.4"),
+      crossScalaVersions := Seq("2.11.5", "2.11.2", "2.10.4"),
       publishArtifact := true,
       publishArtifact in Test := true
     )
@@ -52,10 +52,10 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
-    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.2.0"
+    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.3.0"
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23"
-    val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.3.4]" % "provided"
-    val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.2.0"
+    val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.3.7]" % "provided"
+    val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.6.0"
     val logback = "ch.qos.logback" % "logback-classic" % "1.1.2"
   }
 
@@ -94,11 +94,6 @@ object SonatypeBuild {
           <developer>
             <id>xnejp03</id>
             <name>Petr Nejedly</name>
-            <url>http://www.equalexperts.com</url>
-          </developer>
-          <developer>
-            <id>DougC</id>
-            <name>Doug Clinton</name>
             <url>http://www.equalexperts.com</url>
           </developer>
           <developer>
