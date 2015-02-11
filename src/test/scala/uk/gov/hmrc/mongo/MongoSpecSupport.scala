@@ -15,6 +15,9 @@
  */
 package uk.gov.hmrc.mongo
 
+import reactivemongo.bson.BSONDocument
+import reactivemongo.core.commands.LastError
+
 import scala.concurrent.duration._
 import reactivemongo.api.FailoverStrategy
 import reactivemongo.api.collections.default.BSONCollection
@@ -33,6 +36,15 @@ trait MongoSpecSupport {
     import reactivemongo.api._
     mongoConnectorForTest.helper.db(name, failoverStrategy)
   }
+
+  def lastError(successful: Boolean, updated: Boolean = false, originalDoc: Option[BSONDocument] = None) = LastError(
+    ok = successful,
+    err = None,
+    code = None,
+    errMsg = None,
+    originalDocument = originalDoc,
+    updated = if (updated) 1 else 0,
+    updatedExisting = updated)
 
 }
 
