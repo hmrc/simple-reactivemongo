@@ -9,7 +9,7 @@ object HmrcBuild extends Build {
   import uk.gov.hmrc.{SbtBuildInfo, ShellPrompt}
 
   val nameApp = "simple-reactivemongo"
-  val versionApp = "2.2.0"
+  val versionApp = "2.3.0-SNAPSHOT"
 
   val appDependencies = {
     import Dependencies._
@@ -40,12 +40,12 @@ object HmrcBuild extends Build {
         "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/",
         "typesafe-snapshots" at "http://repo.typesafe.com/typesafe/snapshots/"
       ),
-      crossScalaVersions := Seq("2.11.5", "2.11.2"),
+      crossScalaVersions := Seq("2.11.5"),
       publishArtifact := true,
       publishArtifact in Test := true
     )
     .settings(SbtBuildInfo(): _*)
-    .settings(SonatypeBuild(): _*)
+    .settings(ArtefactDescription(): _*)
 
 }
 
@@ -72,12 +72,9 @@ object Dependencies {
 }
 
 
-object SonatypeBuild {
+object ArtefactDescription {
 
-  import xerial.sbt.Sonatype._
-
-  def apply() = {
-    sonatypeSettings ++ Seq(
+  def apply() = Seq(
       pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
         <licenses>
           <license>
@@ -108,6 +105,5 @@ object SonatypeBuild {
           </developer>
         </developers>)
     )
-  }
 }
 
