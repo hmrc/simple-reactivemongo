@@ -40,12 +40,12 @@ object HmrcBuild extends Build {
         "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/",
         "typesafe-snapshots" at "http://repo.typesafe.com/typesafe/snapshots/"
       ),
-      crossScalaVersions := Seq("2.11.5"),
+      crossScalaVersions := Seq("2.11.6"),
       publishArtifact := true,
       publishArtifact in Test := true
     )
     .settings(SbtBuildInfo(): _*)
-    .settings(ArtefactDescription(): _*)
+    .settings(BuildDescriptionSettings(): _*)
 
 }
 
@@ -54,14 +54,14 @@ object Dependencies {
   object Compile {
     val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.3.0"
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23"
-    val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.3.7]" % "provided"
+    val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.3.8]" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.6.0"
     val logback = "ch.qos.logback" % "logback-classic" % "1.1.2"
   }
 
   sealed abstract class Test(scope: String) {
 
-    val scalaTest = "org.scalatest" %% "scalatest" % "2.2.1" % scope
+    val scalaTest = "org.scalatest" %% "scalatest" % "2.2.4" % scope
     val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % scope
   }
 
@@ -72,9 +72,11 @@ object Dependencies {
 }
 
 
-object ArtefactDescription {
+object BuildDescriptionSettings {
+  import xerial.sbt.Sonatype._
 
-  def apply() = Seq(
+  def apply() = {
+    sonatypeSettings ++ Seq(
       pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
         <licenses>
           <license>
@@ -105,5 +107,6 @@ object ArtefactDescription {
           </developer>
         </developers>)
     )
+  }
 }
 
