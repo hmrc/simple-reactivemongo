@@ -17,7 +17,6 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
   def atomicUpsert(finder: BSONDocument, modifierBson: BSONDocument)
                   (implicit ec: ExecutionContext, reads: Reads[T], writes: Writes[T])
                    : Future[DatabaseUpdate[T]] =
-
     atomicSaveOrUpdate(finder, modifierBson, upsert = true)
                       .map{_.getOrElse(
                                throw new EntityNotFoundException("Failed to receive updated object!"))}
@@ -27,7 +26,7 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
                         : Future[Option[DatabaseUpdate[T]]] = withCurrentTime {
       implicit time =>
 
-        val (updateCommand, insertDocumentId) = if (!upsert) {
+        val (updateCommand, insertDocumentId) = if (upsert) {
           val insertedId = BSONObjectID.generate
           (modifierBson ++ createIdOnInsertOnly(insertedId), Some(insertedId))
         } else (modifierBson, None)
