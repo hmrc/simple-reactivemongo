@@ -104,11 +104,11 @@ mongo-async-driver {
 
 #### Create a repository class using AtomicsUpdate
 
-The AtomicUpdate trait is a wrapper around the findAndModify command which modifies and returns a single document, using atomic operations. By default, the returned document will include the
-modifications made on the update. Please refer to the mongo documentation concerning the commands which can be supplied to the
+The AtomicUpdate trait is a wrapper around the findAndModify command which modifies and returns a single document, using atomic operations. By default, the returned mongo document will include the
+modifications made on the update. Please refer to the mongo documentation concerning the commands which can be supplied to the update operations.
 
 
-To include the trait AtomicsUpdate to your existing repository, please follow the steps below.
+To include the trait AtomicsUpdate to your existing repository, follow the steps below.
 
 1) Update your repository to use the AtomicUpdate trait, passing the type of the object being read/written.
 
@@ -128,16 +128,17 @@ class SimpleTestRepository(implicit mc: MongoConnector)
 ```
 
 
-The two functions exposed from the AtomicUpdate trait are detailed below which both return the type Future[Option[DatabaseUpdate[T]]], where the
+The two functions exposed from the AtomicUpdate trait are detailed below which both return the type Future[Option[DatabaseUpdate[T]]], where
 DatabaseUpdate encapsulates the update type which can be either Saved (new insert) or Updated (updated record). Please note the document with the modifications
-made on the update to mongo will be returned.
+applied on the update command to mongo will be returned.
 
 1) def atomicUpsert(finder: BSONDocument, modifierBson: BSONDocument)
-This function will invoke atomicSaveOrUpdate passing the 'upsert' flag as true.
+This function will invoke atomicSaveOrUpdate passing the 'upsert' flag as true. Can this function to insert a new record.
 
 2)  def atomicSaveOrUpdate(finder: BSONDocument, modifierBson: BSONDocument, upsert: Boolean) 
+This function is used to override the upsert parameter.
 
-The parameters for the function are...
+The parameters for the functions are...
 
 finder          - A BSON finder used to find an existing record.
 modifierBson    - The BSON modifier to be applied to mongo.
