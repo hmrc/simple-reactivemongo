@@ -138,14 +138,13 @@ This function will invoke atomicSaveOrUpdate passing the 'upsert' flag as true. 
 2)  def atomicSaveOrUpdate(finder: BSONDocument, modifierBson: BSONDocument, upsert: Boolean) 
 This function is used to override the upsert parameter.
 
-The parameters for the functions are...
+The parameters for the functions above are defined below:-
 
-a) finder          -    A BSON finder used to find an existing record.
-b) modifierBson    -    The BSON modifier to be applied.
-c) upsert          -    If the value is true, a BSONDocument will be added to the modifierBSON to generate the Id field on the collection using BSONObjectID.generate.
-                        If the value is false, no additional BSONDocument will be applied to modifierBson. If the 'finder' returns no document, then None will be returned.
-                        If unsure if the record already exists, then set the 'upsert' value to true.
-
+<ul>
+<li>finder          -    A BSON finder used to find an existing record.</li>
+<li>modifierBson    -    The BSON modifier to be applied.</li>
+<li>upsert          -    If the value is true, a BSONDocument will be added to the modifierBson parameter to generate the Id field on the collection using BSONObjectID.generate. If the value is false, no additional BSONDocument will be applied to modifierBson. If the 'finder' returns no document, then None will be returned. If unsure if the record already exists, then set the 'upsert' value to true.</li>
+</ul>
 Please refer to the unit test AtomicUpdateSpec for simple examples concerning using the trait AtomicUpdate.
 
 For documentation, please refer to http://docs.mongodb.org/manual/reference/command/findAndModify.
