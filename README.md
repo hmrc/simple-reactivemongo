@@ -133,17 +133,18 @@ DatabaseUpdate encapsulates the update type which can be either Saved (new inser
 applied on the update command to mongo will be returned.
 
 1) def atomicUpsert(finder: BSONDocument, modifierBson: BSONDocument)
-This function will invoke atomicSaveOrUpdate passing the 'upsert' flag as true. Can this function to insert a new record.
+This function will invoke atomicSaveOrUpdate passing the 'upsert' flag as true. Function used to insert a new record.
 
 2)  def atomicSaveOrUpdate(finder: BSONDocument, modifierBson: BSONDocument, upsert: Boolean) 
 This function is used to override the upsert parameter.
 
 The parameters for the functions are...
 
-finder          - A BSON finder used to find an existing record.
-modifierBson    - The BSON modifier to be applied to mongo.
-upsert          - If the value is true, a BSONDocument will be added to the modifierBSON to generate the Id field on the collection using BSONObjectID.generate.
-                  If the value is false, no additional BSONDocument will be applied to modifierBson. If the 'finder' returns no document, then None will be returned.
+a) finder          -    A BSON finder used to find an existing record.
+b) modifierBson    -    The BSON modifier to be applied.
+c) upsert          -    If the value is true, a BSONDocument will be added to the modifierBSON to generate the Id field on the collection using BSONObjectID.generate.
+                        If the value is false, no additional BSONDocument will be applied to modifierBson. If the 'finder' returns no document, then None will be returned.
+                        If unsure if the record already exists, then set the 'upsert' value to true.
 
 Please refer to the unit test AtomicUpdateSpec for simple examples concerning using the trait AtomicUpdate.
 
