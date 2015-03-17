@@ -3,7 +3,7 @@ package uk.gov.hmrc.mongo
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import play.api.libs.json.Json
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-
+import reactivemongo.bson.{BSONObjectID, BSONDocument}
 import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson.{BSONNull, BSONString, BSONDocument, BSONObjectID}
 
@@ -36,8 +36,10 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       val a1 = AtomicTestInObject("namea", "othervaluea")
       val a2 = AtomicTestInObject("nameb", "othervalueb")
 
-      await(insertRecord(a1))
-      await(insertRecord(a2))
+      val result1=await(insertRecord(a1))
+      result1.updateType shouldBe a [Saved[_]]
+      val result2=await(insertRecord(a2))
+      result2.updateType shouldBe a [Saved[_]]
 
       val result: List[AtomicTestObject] = await(repository.findAll)
 
@@ -55,11 +57,12 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
 
       await(repository.save(existingRecord))
 
-      await( repository.atomicUpsert(findByField(existingRecord.name),
+      val atomicResult=await( repository.atomicUpsert(findByField(existingRecord.name),
         BSONDocument(
           "$set" -> BSONDocument("name" -> updateRecord.name)
         ))
       )
+      atomicResult.updateType shouldBe a [Updated[_]]
 
       val result: List[AtomicTestObject] = await(repository.findAll)
       result.size shouldBe 1
@@ -73,12 +76,13 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
 
       await(repository.save(existingRecord))
 
-      await( repository.atomicUpsert(findByField(existingRecord.name),
+      val atomicResult=await( repository.atomicUpsert(findByField(existingRecord.name),
         BSONDocument(
           "$set" -> BSONDocument("name" -> updateRecord.name),
           "$set" -> BSONDocument("someOtherField" -> updateRecord.someOtherField)
         ))
       )
+      atomicResult.updateType shouldBe a [Updated[_]]
 
       val result: List[AtomicTestObject] = await(repository.findAll)
       result.size shouldBe 1
@@ -92,11 +96,12 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
 
       await(repository.save(existingRecord))
 
-      await( repository.atomicUpsert(findByField(existingRecord.name),
+      val atomicResult=await( repository.atomicUpsert(findByField(existingRecord.name),
         BSONDocument(
           "$unset" -> BSONDocument("optionalValue" -> BSONNull)
         ))
       )
+      atomicResult.updateType shouldBe a [Updated[_]]
 
       val result: List[AtomicTestObject] = await(repository.findAll)
       result.size shouldBe 1
@@ -119,7 +124,7 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
     BSONDocument("name" -> BSONString(field))
   }
 
-  def insertRecord(testObj:AtomicTestInObject) : Future[DatabaseUpdate[AtomicTestObject]] = {
+  def insertRecord(testObj:AtomicTestInObject) : Future[DatabaseUpdate[_]] = {
     repository.atomicUpsert(findByField(testObj.name),
       BSONDocument(
         "$set" -> BSONDocument("name" -> testObj.name),
