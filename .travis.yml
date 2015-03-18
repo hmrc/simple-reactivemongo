@@ -1,0 +1,11 @@
+language: scala
+scala:
+- 2.11.6
+jdk:
+- oraclejdk7
+services:
+- mongodb
+notifications:
+  email:
+    recipients:
+    - platform-engineering@digital.cabinet-office.gov.uk
