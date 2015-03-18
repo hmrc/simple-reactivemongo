@@ -21,6 +21,7 @@ import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
 import ch.qos.logback.core.read.ListAppender
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import org.scalatest.concurrent.Eventually
+import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.slf4j.LoggerFactory
 import play.api.libs.json.{JsValue, Json}
@@ -220,7 +221,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
         await(repository.ensureIndexes)
         await(repository.save(TestObject("random_object")))
 
-        eventually {
+        eventually(timeout(Span(5, Seconds))) {
           logList shouldBe empty
         }
       }
@@ -232,7 +233,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
         await(failingIndexesRepository.ensureIndexes)
         await(failingIndexesRepository.save(TestObject("aValue", Some("anotherValue"))))
 
-        eventually {
+        eventually(timeout(Span(5, Seconds))) {
           logList.size should be(2)
           logList.foreach(_.getMessage should be(failingIndexesRepository.message))
         }
