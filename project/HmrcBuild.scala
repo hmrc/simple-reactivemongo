@@ -30,8 +30,8 @@ object HmrcBuild extends Build {
   lazy val simpleReactiveMongo = Project(nameApp, file("."))
     .enablePlugins(AutomateHeaderPlugin)
     .settings(version := versionApp)
-    .settings(scalaSettings : _*)
-    .settings(defaultSettings() : _*)
+    .settings(scalaSettings: _*)
+    .settings(defaultSettings(): _*)
     .settings(
       targetJvm := "jvm-1.7",
       shellPrompt := ShellPrompt(versionApp),
@@ -76,10 +76,8 @@ object Dependencies {
 
 
 object BuildDescriptionSettings {
-  import xerial.sbt.Sonatype._
 
-  def apply() = {
-    sonatypeSettings ++ Seq(
+  def apply() = Seq(
       pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
         <licenses>
           <license>
@@ -110,7 +108,6 @@ object BuildDescriptionSettings {
           </developer>
         </developers>)
     )
-  }
 }
 
 
