@@ -2,6 +2,8 @@
 
 [![Join the chat at https://gitter.im/hmrc/simple-reactivemongo](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/hmrc/simple-reactivemongo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+[![Build Status](https://travis-ci.org/hmrc/simple-reactivemongo.svg)](https://travis-ci.org/hmrc/simple-reactivemongo)
+
 Provides simple serialization for [ReactiveMongo](http://reactivemongo.org) - reactive, asynchronous and non-blocking Scala driver for MongoDB.
 
 This started as a fork of [Play-ReactiveMongo](https://github.com/ReactiveMongo/Play-ReactiveMongo) as it seemed like a good idea to refactor out the coupling to a Play application.
