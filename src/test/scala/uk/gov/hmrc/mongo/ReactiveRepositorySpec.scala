@@ -82,7 +82,7 @@ class FailingIndexesTestRepository(implicit mc: MongoConnector)
   )
 }
 
-class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime with Eventually {
+class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime with Eventually with LogCapturing {
 
   val repository = new SimpleTestRepository
   val failingIndexesRepository = new FailingIndexesTestRepository
@@ -215,7 +215,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       a [DatabaseException] should be thrownBy await(repository.save(shouldNotSave))
     }
 
-    "should not log errors when all are created successfully" in new LogCapturing {
+    "should not log errors when all are created successfully" in  {
       withCaptureOfLoggingFrom[SimpleTestRepository] { logList =>
         await(repository.drop)
         await(repository.ensureIndexes)
@@ -227,10 +227,10 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       }
     }
 
-    "should log any error that arises when creating an index" in new LogCapturing {
+    "should log any error that arises when creating an index" in  {
       withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
         await(failingIndexesRepository.drop)
-        await(failingIndexesRepository.ensureIndexes) shouldBe Seq(true, true, false, false)
+        await(failingIndexesRepository.ensureIndexes).filter(_==true) should have size 2
         await(failingIndexesRepository.save(TestObject("aValue", Some("anotherValue"))))
 
         eventually(timeout(Span(5, Seconds))) {
