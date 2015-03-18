@@ -230,7 +230,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
     "should log any error that arises when creating an index" in new LogCapturing {
       withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
         await(failingIndexesRepository.drop)
-        await(failingIndexesRepository.ensureIndexes)
+        await(failingIndexesRepository.ensureIndexes) shouldBe Seq(true, true, false, false)
         await(failingIndexesRepository.save(TestObject("aValue", Some("anotherValue"))))
 
         eventually(timeout(Span(5, Seconds))) {
