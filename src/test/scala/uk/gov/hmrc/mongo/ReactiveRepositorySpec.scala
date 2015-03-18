@@ -22,7 +22,7 @@ import ch.qos.logback.core.read.ListAppender
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.{SequentialNestedSuiteExecution, BeforeAndAfterEach, Matchers, WordSpec}
 import org.slf4j.LoggerFactory
 import play.api.libs.json.{JsValue, Json}
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -82,7 +82,7 @@ class FailingIndexesTestRepository(implicit mc: MongoConnector)
   )
 }
 
-class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime with Eventually with LogCapturing {
+class ReactiveRepositorySpec extends WordSpec with SequentialNestedSuiteExecution with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime with Eventually with LogCapturing {
 
   val repository = new SimpleTestRepository
   val failingIndexesRepository = new FailingIndexesTestRepository
@@ -221,9 +221,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
         await(repository.ensureIndexes)
         await(repository.save(TestObject("random_object")))
 
-        eventually(timeout(Span(5, Seconds))) {
-          logList shouldBe empty
-        }
+        logList shouldBe empty
       }
     }
 
@@ -233,10 +231,8 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
         await(failingIndexesRepository.ensureIndexes).filter(_==true) should have size 2
         await(failingIndexesRepository.save(TestObject("aValue", Some("anotherValue"))))
 
-        eventually(timeout(Span(5, Seconds))) {
-          logList.size should be(2)
-          logList.foreach(_.getMessage should be(failingIndexesRepository.message))
-        }
+        logList.size should be(2)
+        logList.foreach(_.getMessage should be(failingIndexesRepository.message))
       }
     }
   }
