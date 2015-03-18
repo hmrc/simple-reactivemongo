@@ -3,6 +3,7 @@ import Keys._
 
 object HmrcBuild extends Build {
 
+  import de.heikoseeberger.sbtheader.AutomateHeaderPlugin
   import uk.gov.hmrc.DefaultBuildSettings
   import DefaultBuildSettings._
   import BuildDependencies._
@@ -27,6 +28,7 @@ object HmrcBuild extends Build {
   }
 
   lazy val simpleReactiveMongo = Project(nameApp, file("."))
+    .enablePlugins(AutomateHeaderPlugin)
     .settings(version := versionApp)
     .settings(scalaSettings : _*)
     .settings(defaultSettings() : _*)
@@ -46,6 +48,7 @@ object HmrcBuild extends Build {
     )
     .settings(SbtBuildInfo(): _*)
     .settings(BuildDescriptionSettings(): _*)
+    .settings(HeaderSettings())
 
 }
 
@@ -54,8 +57,8 @@ object Dependencies {
   object Compile {
     val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.3.0"
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23"
-    val playJson = "com.typesafe.play" %% "play-json" % "[2.1.0,2.3.8]" % "provided"
-    val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.6.0"
+    val playJson = "com.typesafe.play" %% "play-json" % "2.3.8" % "provided"
+    val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.8.0"
     val logback = "ch.qos.logback" % "logback-classic" % "1.1.2"
   }
 
@@ -109,4 +112,14 @@ object BuildDescriptionSettings {
     )
   }
 }
+
+
+object HeaderSettings {
+
+  import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
+  import de.heikoseeberger.sbtheader.license.Apache2_0
+
+  def apply() = headers := Map("scala" -> Apache2_0("2015", "HM Revenue & Customs"))
+}
+
 
