@@ -75,17 +75,14 @@ class FailingIndexesTestRepository(implicit mc: MongoConnector)
   extends ReactiveRepository[TestObject, BSONObjectID]("failingIndexesTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
   override def indexes = Seq(
-    Index(Seq("aField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true),
-    Index(Seq("anotherField" -> IndexType.Ascending), name = Some("index2")),
-    Index(Seq("thisShouldFailField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true),
-    Index(Seq("thisShouldAlsoFailField" -> IndexType.Ascending), name = Some("index2"))
+    Index(Seq("aField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true)
   )
 }
 
 class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime with Eventually with LogCapturing {
 
   val repository = new SimpleTestRepository
-  val failingIndexesRepository = new FailingIndexesTestRepository
+  val uniqueIndexRepository = new FailingIndexesTestRepository
 
   override def beforeEach() {
     await(repository.removeAll)
@@ -229,14 +226,15 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
     "should log any error that arises when creating an index" in  {
       withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
-        await(failingIndexesRepository.drop)
-        await(failingIndexesRepository.ensureIndexes).filter(_==true) should have size 2
-        await(failingIndexesRepository.save(TestObject("aValue", Some("anotherValue"))))
+        await(uniqueIndexRepository.drop)
 
-        eventually(timeout(Span(5, Seconds))) {
-          logList.size should be(2)
-          logList.foreach(_.getMessage should be(failingIndexesRepository.message))
-        }
+        await(uniqueIndexRepository.save(TestObject("uniqueKey", Some("bogus"))))
+        await(uniqueIndexRepository.save(TestObject("uniqueKey", Some("whatever"))))
+
+        await(uniqueIndexRepository.ensureIndexes) shouldBe Seq(false)
+        logList.size should be(1)
+        logList.head.getMessage shouldBe (uniqueIndexRepository.message)
+
       }
     }
   }
