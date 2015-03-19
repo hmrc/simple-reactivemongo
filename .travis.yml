@@ -1,13 +1,8 @@
-sudo: false
 language: scala
 scala:
 - 2.11.6
 jdk:
 - oraclejdk7
-cache:
-  directories:
-    - '$HOME/.m2/repository'
-    - '$HOME/.ivy2/cache'
 notifications:
   email:
     recipients:
