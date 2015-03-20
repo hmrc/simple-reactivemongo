@@ -1,0 +1,3 @@
+* Addition of Geospatial trait, a basic near point 2d spherical function
+* AtomicUpdate trait providing a functional wrapper around FindAndModify
+* Number of bug fixes
