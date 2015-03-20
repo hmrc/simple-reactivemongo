@@ -87,7 +87,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     }
   }
 
-  final def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
+  def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
     Future.sequence(indexes.map(ensureIndex))
   }
 
