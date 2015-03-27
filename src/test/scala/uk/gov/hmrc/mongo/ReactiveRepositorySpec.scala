@@ -20,15 +20,18 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
 import ch.qos.logback.core.read.ListAppender
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
-import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.{ScalaFutures, Eventually}
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.{LoneElement, BeforeAndAfterEach, Matchers, WordSpec}
 import org.slf4j.LoggerFactory
 import play.api.libs.json.{JsValue, Json}
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.BSONObjectID
+import reactivemongo.bson.{BSONInteger, BSONString, BSONDocument, BSONObjectID}
+import reactivemongo.core.commands.{CommandError, BSONCommandResultMaker, Command}
 import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
+
+import scala.concurrent.{Future, ExecutionContext}
 
 case class NestedModel(a: String, b: String)
 
@@ -79,13 +82,13 @@ class FailingIndexesTestRepository(implicit mc: MongoConnector)
   )
 }
 
-class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime with Eventually with LogCapturing {
+class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime with Eventually with LogCapturing with LoneElement with ScalaFutures {
 
-  val repository = new SimpleTestRepository
+  val repository =  new SimpleTestRepository
   val uniqueIndexRepository = new FailingIndexesTestRepository
 
   override def beforeEach() {
-    await(repository.removeAll)
+    await(repository.drop)
   }
 
   "findAll" should {
@@ -236,6 +239,32 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
         logList.head.getMessage shouldBe (uniqueIndexRepository.message)
 
       }
+    }
+
+    "update an index definition if index already exists" in {
+      await(mongo().drop())
+      val oldIndex = Index(Seq("repoField" -> IndexType.Ascending), name = Some("indexName"), unique = true, sparse = true, version = Some(1))
+      val updatedIndex = Index(Seq("repoField" -> IndexType.Descending), name = Some("indexName"), unique = false, sparse = false, version = Some(1), options = BSONDocument("expireAfterSeconds" -> 123456L))
+      class SimpleTestRepository(implicit mc: MongoConnector)
+        extends ReactiveRepository[TestObject, BSONObjectID]("repo", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
+
+        override def indexes = Seq(
+          oldIndex
+        )
+
+        override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = Future.successful(await(super.ensureIndexes))
+      }
+
+      class OtherRepo extends SimpleTestRepository {
+        override def indexes: Seq[Index] = Seq(
+          updatedIndex
+        )
+      }
+
+      val repo1 = new SimpleTestRepository
+      val repo2 = new OtherRepo
+      repo1.collection.indexesManager.list().futureValue should (contain(updatedIndex) and not contain(oldIndex))
+      repo2.collection.indexesManager.list().futureValue should (contain(updatedIndex) and not contain(oldIndex))
     }
   }
 

@@ -18,7 +18,7 @@ package uk.gov.hmrc.mongo
 
 import org.slf4j.LoggerFactory
 import ch.qos.logback.classic.Logger
-import reactivemongo.api.indexes.Index
+import reactivemongo.api.indexes.{CollectionIndexesManager, IndexesManager, Index}
 import play.api.libs.json.{Format, Json}
 import reactivemongo.api.DB
 import reactivemongo.core.commands.{Count, LastError}
@@ -35,7 +35,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
                                                        mc: Option[JSONCollection] = None)
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
-  extends Repository[A, ID] with Indexes {
+  extends Repository[A, ID] with Indexes with IndexUpdate {
 
   import play.api.libs.json.Json.JsValueWrapper
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -44,9 +44,9 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   implicit val domainFormatImplicit = domainFormat
   implicit val idFormatImplicit = idFormat
 
-  lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
+  override lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
 
-  protected val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  override protected val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
   val message: String = "ensuring index failed"
 
   ensureIndexes
@@ -88,7 +88,8 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   }
 
   def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
-    Future.sequence(indexes.map(ensureIndex))
+//    Future.sequence(indexes.map(ensureIndex))
+    updateIndexDefinition(indexes :_*)
   }
 
 }
