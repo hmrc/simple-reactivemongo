@@ -16,22 +16,17 @@
 
 package uk.gov.hmrc.mongo
 
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
-import ch.qos.logback.core.read.ListAppender
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
-import org.scalatest.concurrent.{ScalaFutures, Eventually}
-import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{LoneElement, BeforeAndAfterEach, Matchers, WordSpec}
-import org.slf4j.LoggerFactory
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.time.{Millis, Seconds, Span}
+import org.scalatest.{BeforeAndAfterEach, LoneElement, Matchers, WordSpec}
 import play.api.libs.json.{JsValue, Json}
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONInteger, BSONString, BSONDocument, BSONObjectID}
-import reactivemongo.core.commands.{CommandError, BSONCommandResultMaker, Command}
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 
 case class NestedModel(a: String, b: String)
 
@@ -67,6 +62,7 @@ object TestObject {
 
 class SimpleTestRepository(implicit mc: MongoConnector)
   extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
+  override val updateExistingIndexes: Boolean = false
 
   override def indexes = Seq(
     Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true),
@@ -80,6 +76,8 @@ class FailingIndexesTestRepository(implicit mc: MongoConnector)
   override def indexes = Seq(
     Index(Seq("aField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true)
   )
+
+  override val updateExistingIndexes: Boolean = false
 }
 
 class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting with CurrentTime with Eventually with LogCapturing with LoneElement with ScalaFutures {
@@ -87,8 +85,10 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
   val repository =  new SimpleTestRepository
   val uniqueIndexRepository = new FailingIndexesTestRepository
 
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(500, Millis)), interval = scaled(Span(100, Millis)))
+
   override def beforeEach() {
-    await(repository.drop)
+    await(mongo().drop())
   }
 
   "findAll" should {
@@ -190,6 +190,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
   }
 
   "Creation of Indexes" should {
+
     "should be done based on provided Indexes" in new LogCapturing {
       await(repository.drop)
       await(repository.collection.indexesManager.list()) shouldBe empty
@@ -236,33 +237,29 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
         await(uniqueIndexRepository.ensureIndexes) shouldBe Seq(false)
         logList.size should be(1)
-        logList.head.getMessage shouldBe (uniqueIndexRepository.message)
+        logList.head.getMessage shouldBe (uniqueIndexRepository.ensureIndexFailedMessage)
 
       }
     }
 
     "update an index definition if index already exists" in {
-      await(mongo().drop())
       val oldIndex = Index(Seq("repoField" -> IndexType.Ascending), name = Some("indexName"), unique = true, sparse = true, version = Some(1))
       val updatedIndex = Index(Seq("repoField" -> IndexType.Descending), name = Some("indexName"), unique = false, sparse = false, version = Some(1), options = BSONDocument("expireAfterSeconds" -> 123456L))
+
       class SimpleTestRepository(implicit mc: MongoConnector)
         extends ReactiveRepository[TestObject, BSONObjectID]("repo", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
-
-        override def indexes = Seq(
-          oldIndex
-        )
-
+        override lazy val updateExistingIndexes: Boolean = true
+        override def indexes = Seq(oldIndex)
         override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = Future.successful(await(super.ensureIndexes))
       }
 
       class OtherRepo extends SimpleTestRepository {
-        override def indexes: Seq[Index] = Seq(
-          updatedIndex
-        )
+        override def indexes: Seq[Index] = Seq(updatedIndex)
       }
 
       val repo1 = new SimpleTestRepository
       val repo2 = new OtherRepo
+
       repo1.collection.indexesManager.list().futureValue should (contain(updatedIndex) and not contain(oldIndex))
       repo2.collection.indexesManager.list().futureValue should (contain(updatedIndex) and not contain(oldIndex))
     }
@@ -314,23 +311,3 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
   }
 }
 
-trait LogCapturing {
-
-  import scala.collection.JavaConverters._
-  import scala.reflect._
-
-  def withCaptureOfLoggingFrom[T: ClassTag](body: (=> List[ILoggingEvent]) => Any): Any = {
-    val logger = LoggerFactory.getLogger(classTag[T].runtimeClass).asInstanceOf[LogbackLogger]
-    withCaptureOfLoggingFrom(logger)(body)
-  }
-
-  def withCaptureOfLoggingFrom(logger: LogbackLogger)(body: (=> List[ILoggingEvent]) => Any): Any = {
-    val appender = new ListAppender[ILoggingEvent]()
-    appender.setContext(logger.getLoggerContext)
-    appender.start()
-    logger.addAppender(appender)
-    logger.setLevel(Level.ALL)
-    logger.setAdditive(true)
-    body(appender.list.asScala.toList)
-  }
-}

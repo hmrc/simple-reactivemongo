@@ -17,82 +17,81 @@
 package uk.gov.hmrc.mongo
 
 import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 import reactivemongo.api.indexes.Index
-import reactivemongo.bson.{BSONDocument, BSONInteger, BSONString}
-import reactivemongo.core.commands.{BSONCommandResultMaker, Command, CommandError}
 import reactivemongo.json.collection.JSONCollection
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 
 trait IndexUpdate {
-  def collection: JSONCollection
 
-  protected def logger: Logger
+  protected def logger: Logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
 
   object Update extends Enumeration {
     type IndexUpdateType = Value
     val NO_UPDATE, INSERT, MODIFY = Value
   }
 
-  import Update._
+  final val ensureIndexFailedMessage: String = "ensuring index failed"
 
-  private def needsUpdate(newIndex: Index, existingIndex: Option[Index]): IndexUpdateType = {
-    def keyNeedsUpdate(newIndex: Index, existingIndex: Index) = {
-      val newIndexKeys = newIndex.key.toMap
-      val existingIndexKeys = existingIndex.key.toMap
-      newIndexKeys.exists { case (name, _type) =>
-        val existing = existingIndexKeys.get(name)
-        !existing.isDefined || existing.get != _type
-      }
+  protected def ensureIndex(index: Index)(implicit collection: JSONCollection, ec: ExecutionContext): Future[Boolean] = {
+    collection.indexesManager.ensure(index).recover {
+      case t =>
+        logger.error(ensureIndexFailedMessage, t)
+        false
     }
-
-    existingIndex map { idx: Index =>
-      if (newIndex.eventualName == idx.eventualName &&
-        (!newIndex.options.equals(idx.options) || keyNeedsUpdate(newIndex, idx))) MODIFY
-      else NO_UPDATE
-    } getOrElse (INSERT)
   }
 
-  def updateIndexDefinition(indexes: Index*): Future[Seq[Boolean]] = {
+  import Update._
+
+
+  private def keyNeedsUpdate(newIndex: Index, existingIndex: Index) = {
+    val newIndexKeys = newIndex.key.toMap
+    val existingIndexKeys = existingIndex.key.toMap
+    newIndexKeys.exists { case (name, _type) =>
+      val existing = existingIndexKeys.get(name)
+      !existing.isDefined || existing.get != _type
+    }
+  }
+
+  private def flagsNeedsUpdate(index: Index, existingIndex: Index): Boolean = {
+    Seq(index.background ^ existingIndex.background,
+      index.dropDups ^ existingIndex.dropDups,
+      index.sparse ^ existingIndex.sparse,
+      index.unique ^ existingIndex.unique) exists(_ == true)
+  }
+
+  private def needsUpdate(newIndex: Index, existingIndex: Option[Index]): IndexUpdateType = existingIndex map { idx: Index =>
+    if (newIndex.eventualName == idx.eventualName &&
+      (newIndex.options  != idx.options || keyNeedsUpdate(newIndex, idx) || flagsNeedsUpdate(newIndex, idx))) MODIFY
+    else NO_UPDATE
+  } getOrElse (INSERT)
+
+  def updateIndexDefinition(indexes: Index*)(implicit collection: JSONCollection): Future[Seq[Boolean]] = {
     collection.indexesManager.list() flatMap { existingIndexes =>
       val existingIndexesAsMap = existingIndexes.map(idx => (idx.eventualName, idx)).toMap
       Future.sequence {
         indexes map { newIndex =>
           val updateType = needsUpdate(newIndex, existingIndexesAsMap.get(newIndex.eventualName))
-          if (NO_UPDATE != updateType) update(newIndex, updateType)
+          if (NO_UPDATE != updateType) update(newIndex, updateType, existingIndexesAsMap.get(newIndex.eventualName))
           else Future.successful(false)
         }
       }
     }
   }
 
-  private def update(newIndex: Index, updateType: IndexUpdateType): Future[Boolean] = {
-    val ensureIndex = () => collection.indexesManager.ensure(newIndex).recover {
-      case t =>
-        logger.error("ensuring index failed", t)
-        false
-    }
-    if (updateType == MODIFY) for {
-      deleted <- collection.db.command(DeleteIndex(collection.name, newIndex.eventualName))
-      updated <- ensureIndex()
+  private def update(newIndex: Index, updateType: IndexUpdateType, oldIndex: Option[Index])(implicit collection: JSONCollection): Future[Boolean] = {
+    if (updateType == MODIFY && oldIndex.isDefined) for {
+      deleted <- collection.db.command(EnsureIndexDelete(collection.name, newIndex.eventualName))
+      updated <- collection.indexesManager.ensure(newIndex) recoverWith {
+        case e =>
+          logger.error(s"Definition of index ${newIndex.eventualName} cannot be updated because of: $e. Previous definition of this index will now be restored")
+          ensureIndex(oldIndex.get) map (_ => false)
+      }
     } yield updated
-    else ensureIndex()
-  }
-
-}
-
-sealed case class DeleteIndex(
-                               collection: String,
-                               index: String) extends Command[Int] {
-  override def makeDocuments = BSONDocument(
-    "deleteIndexes" -> BSONString(collection),
-    "index" -> BSONString(index))
-
-  object ResultMaker extends BSONCommandResultMaker[Int] {
-    def apply(document: BSONDocument) =
-      CommandError.checkOk(document, Some("deleteIndexes")).toLeft(document.getAs[BSONInteger]("nIndexesWas").map(_.value).get)
+    else ensureIndex(newIndex)
   }
 
 }

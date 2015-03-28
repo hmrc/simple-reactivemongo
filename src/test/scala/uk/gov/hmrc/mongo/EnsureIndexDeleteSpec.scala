@@ -17,8 +17,8 @@
 package uk.gov.hmrc.mongo
 
 
-import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
-import org.scalatest.{WordSpecLike, Matchers, BeforeAndAfterEach, LoneElement}
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 import play.api.libs.json.Format
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType._
@@ -57,5 +57,7 @@ class EnsureIndexDeleteSpec
   }
 
   val collectionName = "EnsureIndexDeletedSpec"
-  lazy val repo = new ReactiveRepository[String, BSONObjectID](collectionName = collectionName, mongo, implicitly[Format[String]]) {}
+  lazy val repo = new ReactiveRepository[String, BSONObjectID](collectionName = collectionName, mongo, implicitly[Format[String]]) {
+    override val updateExistingIndexes: Boolean = false
+  }
 }
