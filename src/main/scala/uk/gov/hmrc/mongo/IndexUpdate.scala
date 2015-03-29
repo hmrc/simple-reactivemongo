@@ -29,12 +29,18 @@ trait IndexUpdate {
 
   protected def logger: Logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
 
-  object Update extends Enumeration {
-    type IndexUpdateType = Value
-    val NO_UPDATE, INSERT, MODIFY = Value
-  }
-
   final val ensureIndexFailedMessage: String = "ensuring index failed"
+
+
+  def updateIndexDefinition(indexes: Index*)
+                           (implicit collection: JSONCollection): Future[Seq[Boolean]] = collection.indexesManager.list() flatMap { existingIndexes =>
+    val existingIndexesAsMap = existingIndexes.map(idx => (idx.eventualName, idx)).toMap
+    Future.sequence {
+      indexes map { newIndex =>
+        upsertOrIgnore(newIndex, existingIndexesAsMap.get(newIndex.eventualName))
+      }
+    }
+  }
 
   protected def ensureIndex(index: Index)(implicit collection: JSONCollection, ec: ExecutionContext): Future[Boolean] = {
     collection.indexesManager.ensure(index).recover {
@@ -44,8 +50,20 @@ trait IndexUpdate {
     }
   }
 
-  import Update._
+  private def upsertOrIgnore(newIndex: Index, oldIndex: Option[Index])
+                            (implicit collection: JSONCollection): Future[Boolean] = oldIndex map { existingIndex =>
+    if (requiresUpdate(newIndex, existingIndex)) update(newIndex, existingIndex) else Future.successful(false)
+  } getOrElse (ensureIndex(newIndex))
 
+  private def update(newIndex: Index, oldIndex: Index)
+                    (implicit collection: JSONCollection): Future[Boolean] = for {
+    deleted <- collection.db.command(EnsureIndexDelete(collection.name, newIndex.eventualName))
+    updated <- collection.indexesManager.ensure(newIndex) recoverWith {
+      case e =>
+        logger.error(s"Definition of index ${newIndex.eventualName} cannot be updated because of: $e. Previous definition of this index will now be restored")
+        ensureIndex(oldIndex) map (_ => false)
+    }
+  } yield updated
 
   private def keyNeedsUpdate(newIndex: Index, existingIndex: Index) = {
     val newIndexKeys = newIndex.key.toMap
@@ -56,42 +74,13 @@ trait IndexUpdate {
     }
   }
 
-  private def flagsNeedsUpdate(index: Index, existingIndex: Index): Boolean = {
+  private def flagsNeedsUpdate(index: Index, existingIndex: Index): Boolean =
     Seq(index.background ^ existingIndex.background,
-      index.dropDups ^ existingIndex.dropDups,
-      index.sparse ^ existingIndex.sparse,
-      index.unique ^ existingIndex.unique) exists(_ == true)
-  }
+        index.dropDups ^ existingIndex.dropDups,
+        index.sparse ^ existingIndex.sparse,
+        index.unique ^ existingIndex.unique) exists (_ == true)
 
-  private def needsUpdate(newIndex: Index, existingIndex: Option[Index]): IndexUpdateType = existingIndex map { idx: Index =>
-    if (newIndex.eventualName == idx.eventualName &&
-      (newIndex.options  != idx.options || keyNeedsUpdate(newIndex, idx) || flagsNeedsUpdate(newIndex, idx))) MODIFY
-    else NO_UPDATE
-  } getOrElse (INSERT)
-
-  def updateIndexDefinition(indexes: Index*)(implicit collection: JSONCollection): Future[Seq[Boolean]] = {
-    collection.indexesManager.list() flatMap { existingIndexes =>
-      val existingIndexesAsMap = existingIndexes.map(idx => (idx.eventualName, idx)).toMap
-      Future.sequence {
-        indexes map { newIndex =>
-          val updateType = needsUpdate(newIndex, existingIndexesAsMap.get(newIndex.eventualName))
-          if (NO_UPDATE != updateType) update(newIndex, updateType, existingIndexesAsMap.get(newIndex.eventualName))
-          else Future.successful(false)
-        }
-      }
-    }
-  }
-
-  private def update(newIndex: Index, updateType: IndexUpdateType, oldIndex: Option[Index])(implicit collection: JSONCollection): Future[Boolean] = {
-    if (updateType == MODIFY && oldIndex.isDefined) for {
-      deleted <- collection.db.command(EnsureIndexDelete(collection.name, newIndex.eventualName))
-      updated <- collection.indexesManager.ensure(newIndex) recoverWith {
-        case e =>
-          logger.error(s"Definition of index ${newIndex.eventualName} cannot be updated because of: $e. Previous definition of this index will now be restored")
-          ensureIndex(oldIndex.get) map (_ => false)
-      }
-    } yield updated
-    else ensureIndex(newIndex)
-  }
+  private def requiresUpdate(newIndex: Index, existingIndex: Index): Boolean = (newIndex.eventualName == existingIndex.eventualName &&
+    (newIndex.options != existingIndex.options || keyNeedsUpdate(newIndex, existingIndex) || flagsNeedsUpdate(newIndex, existingIndex)))
 
 }
