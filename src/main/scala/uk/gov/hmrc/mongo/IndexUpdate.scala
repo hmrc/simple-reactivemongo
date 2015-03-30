@@ -74,13 +74,13 @@ trait IndexUpdate {
     }
   }
 
-  private def flagsNeedsUpdate(index: Index, existingIndex: Index): Boolean =
+  private def flagsNeedUpdate(index: Index, existingIndex: Index): Boolean =
     Seq(index.background ^ existingIndex.background,
         index.dropDups ^ existingIndex.dropDups,
         index.sparse ^ existingIndex.sparse,
         index.unique ^ existingIndex.unique) exists (_ == true)
 
   private def requiresUpdate(newIndex: Index, existingIndex: Index): Boolean = (newIndex.eventualName == existingIndex.eventualName &&
-    (newIndex.options != existingIndex.options || keyNeedsUpdate(newIndex, existingIndex) || flagsNeedsUpdate(newIndex, existingIndex)))
+    (newIndex.options != existingIndex.options || keyNeedsUpdate(newIndex, existingIndex) || flagsNeedUpdate(newIndex, existingIndex)))
 
 }
