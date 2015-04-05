@@ -22,8 +22,8 @@ In your project/Build.scala:
 
 ```scala
 libraryDependencies ++= Seq(
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "1.1.0",
-  "com.typesafe.play" %% "play-json" % "2.2.3" //supports from 2.1.0
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "x.x.x",
+  "com.typesafe.play" %% "play-json" % "2.2.8" //supports from 2.1.0
 )
 ```
 
