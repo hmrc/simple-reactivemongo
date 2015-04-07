@@ -151,7 +151,9 @@ Please refer to the unit test AtomicUpdateSpec for simple examples concerning us
 
 For documentation, please refer to http://docs.mongodb.org/manual/reference/command/findAndModify.
 
-
+## License ##
+ 
+This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
 
 
 
