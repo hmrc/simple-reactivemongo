@@ -13,7 +13,7 @@ of the issues the other simpler libraries have.
 
 #### CASE CLASS <-> JSON <-> BSON conversion
 
-Simple-reactivemongo uses [Play Json](http://www.playframework.com/documentation/2.2.x/ScalaJson) to serialise/deserialise JSON to/from case classes and
+Simple-reactivemongo uses [Play Json](http://www.playframework.com/documentation/2.3.x/ScalaJson) to serialise/deserialise JSON to/from case classes and
 there is a specialized collection called `JSONCollection` that deals naturally with `JSValue` and `JSObject` instead of ReactiveMongo's `BSONDocument`.
 
 #### Add simple-reactivemongo
@@ -23,7 +23,7 @@ In your project/Build.scala:
 ```scala
 libraryDependencies ++= Seq(
   "uk.gov.hmrc" %% "simple-reactivemongo" % "x.x.x",
-  "com.typesafe.play" %% "play-json" % "2.2.8" //supports from 2.1.0
+  "com.typesafe.play" %% "play-json" % "2.3.8"
 )
 ```
 

@@ -38,6 +38,7 @@ object HmrcBuild extends Build {
       shellPrompt := ShellPrompt(versionApp),
       libraryDependencies ++= appDependencies,
       resolvers := Seq(
+        Resolver.bintrayRepo("hmrc", "releases"),
         Opts.resolver.sonatypeReleases,
         Opts.resolver.sonatypeSnapshots,
         "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/",
@@ -56,7 +57,7 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
-    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.3.0"
+    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.5.0"
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23"
     val playJson = "com.typesafe.play" %% "play-json" % "2.3.8" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.8.0"
@@ -66,7 +67,7 @@ object Dependencies {
   sealed abstract class Test(scope: String) {
 
     val scalaTest = "org.scalatest" %% "scalatest" % "2.2.4" % scope
-    val pegdown = "org.pegdown" % "pegdown" % "1.4.2" % scope
+    val pegdown = "org.pegdown" % "pegdown" % "1.5.0" % scope
   }
 
   object Test extends Test("test")
@@ -114,10 +115,11 @@ object BuildDescriptionSettings {
 
 object HeaderSettings {
 
+  import org.joda.time.DateTime
   import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
   import de.heikoseeberger.sbtheader.license.Apache2_0
 
-  def apply() = headers := Map("scala" -> Apache2_0("2015", "HM Revenue & Customs"))
+  def apply() = headers := Map("scala" -> Apache2_0(DateTime.now().getYear.toString, "HM Revenue & Customs"))
 }
 
 
