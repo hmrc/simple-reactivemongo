@@ -1,13 +1,12 @@
+import sbt.Keys._
 import sbt._
-import Keys._
+import uk.gov.hmrc.SbtAutoBuildPlugin
 
 object HmrcBuild extends Build {
 
-  import de.heikoseeberger.sbtheader.AutomateHeaderPlugin
   import uk.gov.hmrc.DefaultBuildSettings
   import DefaultBuildSettings._
-  import BuildDependencies._
-  import uk.gov.hmrc.{SbtBuildInfo, ShellPrompt}
+  import SbtAutoBuildPlugin._
 
   val nameApp = "simple-reactivemongo"
   val versionApp = "2.6.2-SNAPSHOT"
@@ -28,30 +27,15 @@ object HmrcBuild extends Build {
   }
 
   lazy val simpleReactiveMongo = Project(nameApp, file("."))
-    .enablePlugins(AutomateHeaderPlugin)
-    .settings(version := versionApp)
-    .settings(scalaSettings: _*)
-    .settings(defaultSettings(): _*)
+    .enablePlugins(SbtAutoBuildPlugin)
     .settings(
+      autoSourceHeader := false,
       targetJvm := "jvm-1.7",
       scalaVersion := "2.11.6",
-      shellPrompt := ShellPrompt(versionApp),
+      version := versionApp,
       libraryDependencies ++= appDependencies,
-      resolvers := Seq(
-        Resolver.bintrayRepo("hmrc", "releases"),
-        Opts.resolver.sonatypeReleases,
-        Opts.resolver.sonatypeSnapshots,
-        "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/",
-        "typesafe-snapshots" at "http://repo.typesafe.com/typesafe/snapshots/"
-      ),
-      crossScalaVersions := Seq("2.11.6"),
-      publishArtifact := true,
-      publishArtifact in Test := true
+      crossScalaVersions := Seq("2.11.6")
     )
-    .settings(SbtBuildInfo(): _*)
-    .settings(BuildDescriptionSettings(): _*)
-    .settings(HeaderSettings())
-
 }
 
 object Dependencies {
@@ -115,9 +99,9 @@ object BuildDescriptionSettings {
 
 object HeaderSettings {
 
-  import org.joda.time.DateTime
   import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
   import de.heikoseeberger.sbtheader.license.Apache2_0
+  import org.joda.time.DateTime
 
   def apply() = headers := Map("scala" -> Apache2_0(DateTime.now().getYear.toString, "HM Revenue & Customs"))
 }
