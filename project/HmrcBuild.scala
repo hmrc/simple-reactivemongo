@@ -34,6 +34,7 @@ object HmrcBuild extends Build {
       scalaVersion := "2.11.6",
       version := versionApp,
       libraryDependencies ++= appDependencies,
+      resolvers ++= Resolver.typesafeRepo("releases"),
       crossScalaVersions := Seq("2.11.6")
     )
 }
@@ -95,15 +96,4 @@ object BuildDescriptionSettings {
         </developers>)
     )
 }
-
-
-object HeaderSettings {
-
-  import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
-  import de.heikoseeberger.sbtheader.license.Apache2_0
-  import org.joda.time.DateTime
-
-  def apply() = headers := Map("scala" -> Apache2_0(DateTime.now().getYear.toString, "HM Revenue & Customs"))
-}
-
 
