@@ -34,7 +34,7 @@ object HmrcBuild extends Build {
       scalaVersion := "2.11.6",
       version := versionApp,
       libraryDependencies ++= appDependencies,
-      resolvers ++= Resolver.typesafeRepo("releases"),
+      resolvers += Resolver.typesafeRepo("releases"),
       crossScalaVersions := Seq("2.11.6")
     )
 }
