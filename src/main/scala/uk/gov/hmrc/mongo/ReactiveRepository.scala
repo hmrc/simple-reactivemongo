@@ -1,8 +1,5 @@
 package uk.gov.hmrc.mongo
 
-import org.slf4j.LoggerFactory
-import ch.qos.logback.classic.Logger
-import reactivemongo.api.indexes.Index
 import play.api.libs.json.{Format, Json}
 import reactivemongo.api.DB
 import reactivemongo.core.commands.{Count, LastError}
@@ -10,7 +7,6 @@ import reactivemongo.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 
 abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
@@ -19,19 +15,19 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
                                                        mc: Option[JSONCollection] = None)
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
-  extends Repository[A, ID] with Indexes {
+  extends Repository[A, ID] with Indexes with IndexUpdate {
 
   import play.api.libs.json.Json.JsValueWrapper
-  import scala.concurrent.ExecutionContext.Implicits.global
   import reactivemongo.core.commands.GetLastError
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
   implicit val domainFormatImplicit = domainFormat
   implicit val idFormatImplicit = idFormat
 
-  lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
+  implicit lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
 
-  protected val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
-  val message: String = "ensuring index failed"
+  def updateExistingIndexes: Boolean
 
   ensureIndexes
 
@@ -63,16 +59,8 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   override def insert(entity: A)(implicit ec: ExecutionContext) = collection.insert(entity)
 
-  private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
-    collection.indexesManager.ensure(index).recover {
-      case t =>
-        logger.error(message, t)
-        false
-    }
-  }
-
-  def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
-    Future.sequence(indexes.map(ensureIndex))
-  }
+  def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
+    if (updateExistingIndexes) updateIndexDefinition(indexes :_*)
+    else Future.sequence(indexes.map(ensureIndex))
 
 }

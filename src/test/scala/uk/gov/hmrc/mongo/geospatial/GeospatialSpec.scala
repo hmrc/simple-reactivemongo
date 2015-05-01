@@ -23,7 +23,7 @@ object Place{
 class GeospatialTestRepository(implicit mc: MongoConnector)
   extends ReactiveRepository[Place, BSONObjectID]("geospatialTestRepository", mc.db, Place.formats, ReactiveMongoFormats.objectIdFormats)
   with Geospatial[Place, BSONObjectID]{
-
+  override val updateExistingIndexes: Boolean = false
   override def indexes = Seq(geo2DSphericalIndex)
 
 }

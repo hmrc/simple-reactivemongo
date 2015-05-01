@@ -135,6 +135,7 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
   class AtomicTestRepository(implicit mc: MongoConnector)
     extends ReactiveRepository[AtomicTestObject, BSONObjectID]("simpleTestRepository", mc.db, AtomicTestObject.formats, ReactiveMongoFormats.objectIdFormats)
     with AtomicUpdate[AtomicTestObject] {
+    override val updateExistingIndexes: Boolean = false
 
     override def indexes = Seq(
       Index(Seq("name" -> IndexType.Ascending), name = Some("aNameUniqueIdx"), unique = true, sparse = true)
@@ -142,6 +143,7 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
 
     override def isInsertion(suppliedId: BSONObjectID, returned: AtomicTestObject): Boolean =
       suppliedId.equals(returned.id)
+
   }
 
 }
