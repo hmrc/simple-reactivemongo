@@ -1,6 +1,7 @@
 import sbt.Keys._
 import sbt._
 import uk.gov.hmrc.SbtAutoBuildPlugin
+import uk.gov.hmrc.versioning.SbtGitVersioning
 
 object HmrcBuild extends Build {
 
@@ -9,7 +10,6 @@ object HmrcBuild extends Build {
   import SbtAutoBuildPlugin._
 
   val nameApp = "simple-reactivemongo"
-  val versionApp = "2.6.2-SNAPSHOT"
 
   val appDependencies = {
     import Dependencies._
@@ -27,12 +27,11 @@ object HmrcBuild extends Build {
   }
 
   lazy val simpleReactiveMongo = Project(nameApp, file("."))
-    .enablePlugins(SbtAutoBuildPlugin)
+    .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
     .settings(
       autoSourceHeader := false,
       targetJvm := "jvm-1.7",
       scalaVersion := "2.11.6",
-      version := versionApp,
       libraryDependencies ++= appDependencies,
       resolvers += Resolver.typesafeRepo("releases"),
       crossScalaVersions := Seq("2.11.6")
