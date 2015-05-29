@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/hmrc/simple-reactivemongo.png?label=ready&title=Ready)](https://waffle.io/hmrc/simple-reactivemongo)
 # simple-reactivemongo
 
 [![Join the chat at https://gitter.im/hmrc/simple-reactivemongo](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/hmrc/simple-reactivemongo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/hmrc/simple-reactivemongo.svg)](https://travis-ci.org/hmrc/simple-reactivemongo) [ ![Download](https://api.bintray.com/packages/hmrc/releases/simple-reactivemongo/images/download.svg) ](https://bintray.com/hmrc/releases/simple-reactivemongo/_latestVersion)
