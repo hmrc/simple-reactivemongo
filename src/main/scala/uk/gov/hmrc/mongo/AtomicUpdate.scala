@@ -10,25 +10,51 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
 
+  final val DEFAULT_ID="_id"
+  final val  ATOMIC_ID="atomicId"
+
   def isInsertion(newRecordId: BSONObjectID, oldRecord: T): Boolean
 
   def collection: JSONCollection
 
-  def atomicUpsert(finder: BSONDocument, modifierBson: BSONDocument)
+  /**
+   *
+   * @param finder          The finder to find an existing record.
+   * @param modifierBson    The modifier to be applied
+   * @param idAttributeName Optional value to override the default object Id for the collection. Atomics MUST have a record Id to store
+   *                        a BSONObjectId in order to understand if the update is an upsert or update.
+   * @param ec
+   * @param reads
+   * @param writes
+   * @return
+   */
+  def atomicUpsert(finder: BSONDocument, modifierBson: BSONDocument, idAttributeName:String = "_id")
                   (implicit ec: ExecutionContext, reads: Reads[T], writes: Writes[T])
                    : Future[DatabaseUpdate[T]] =
-    atomicSaveOrUpdate(finder, modifierBson, upsert = true)
+    atomicSaveOrUpdate(finder, modifierBson, upsert = true, idAttributeName)
                       .map{_.getOrElse(
                                throw new EntityNotFoundException("Failed to receive updated object!"))}
 
-  def atomicSaveOrUpdate(finder: BSONDocument, modifierBson: BSONDocument, upsert: Boolean)
+  /**
+   *
+   * @param finder          The finder to find an existing record.
+   * @param modifierBson    The modifier to be applied
+   * @param upsert
+   * @param idAttributeName Optional value to override the default object Id for the collection. Atomics MUST have a record Id to store
+   *                        a BSONObjectId in order to understand if the update is an upsert or update.
+   * @param ec
+   * @param reads
+   * @param writes
+   * @return
+   */
+  def atomicSaveOrUpdate(finder: BSONDocument, modifierBson: BSONDocument, upsert: Boolean, idAttributeName:String = "_id")
                         (implicit ec: ExecutionContext, reads: Reads[T], writes: Writes[T])
                         : Future[Option[DatabaseUpdate[T]]] = withCurrentTime {
       implicit time =>
 
         val (updateCommand, insertDocumentId) = if (upsert) {
           val insertedId = BSONObjectID.generate
-          (modifierBson ++ createIdOnInsertOnly(insertedId), Some(insertedId))
+          (modifierBson ++ createIdOnInsertOnly(insertedId, idAttributeName), Some(insertedId))
         } else (modifierBson, None)
 
         val command = FindAndModify(collection.name,
@@ -59,6 +85,7 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
 
   private def toDbUpdate(s: BSONDocument, insertedId: Option[BSONObjectID])
                         (implicit reads: Reads[T]): Future[DatabaseUpdate[T]] = {
+
     def createResult(result: T) = {
       if (insertedId.isDefined &&
           isInsertion(insertedId.getOrElse(throw new Exception("Failure!")), result))
@@ -69,11 +96,11 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
 
     JsObjectReader.read(s).asOpt[T] match {
       case Some(result) => Future.successful(createResult(result))
-      case None => Future.failed(new Exception("Failed to receive updated object!"))
+      case None => Future.failed(new Exception("Failed to deserialize returned object into type!"))
     }
   }
 
-  private def createIdOnInsertOnly(id:BSONObjectID) = setOnInsert(BSONDocument("_id" -> id))
+  private def createIdOnInsertOnly(id:BSONObjectID, idAttributeName:String) = setOnInsert(BSONDocument(idAttributeName -> id))
 }
 
 class EntityNotFoundException(msg: String) extends Exception(msg)
