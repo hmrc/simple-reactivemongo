@@ -10,6 +10,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
 
+  final val DEFAULT_ID="_id"
+  final val  ATOMIC_ID="atomicId"
+
   def isInsertion(newRecordId: BSONObjectID, oldRecord: T): Boolean
 
   def collection: JSONCollection
