@@ -41,6 +41,15 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     collection.find(Json.obj(query: _*)).cursor[A].collect[List]()
   }
 
+  def findPaged(pageSize: Int, page: Int, query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
+    val amountToSkip = (page - 1) * pageSize
+    collection.find(Json.obj(query: _*))
+      .sort(JsObject(Seq(("_id", JsNumber(1)))))
+      .options(QueryOpts(amountToSkip, pageSize))
+      .cursor[A]
+      .collect[List](pageSize)
+  }
+
   def findAllPaged(pageSize: Int, page: Int)(implicit ec: ExecutionContext): Future[List[A]] ={
     val amountToSkip = (page - 1) * pageSize
     collection.find(Json.obj())

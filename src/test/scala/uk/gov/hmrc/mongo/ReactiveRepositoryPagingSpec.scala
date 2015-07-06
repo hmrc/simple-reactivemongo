@@ -5,6 +5,7 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, FeatureSpec }
 import org.scalatest.concurrent.Eventually
 import reactivemongo.core.commands.LastError
 import reactivemongo.bson.BSONObjectID
+import play.api.libs.json.{JsArray, JsString, JsObject, Json}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 class ReactiveRepositoryPagingSpec extends FeatureSpec with Matchers with MongoSpecSupport
@@ -69,8 +70,44 @@ class ReactiveRepositoryPagingSpec extends FeatureSpec with Matchers with MongoS
 
   feature("find paging") {
 
-    scenario("TODO") {
-      // TODO 
+    scenario("pageSize 1, page 1 for 'or' query") {
+    	val query = or("aField", Seq(
+    		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"
+    	))  
+      val aFields = await(repository.findPaged(1, 1, query)).map(_.aField)
+      aFields should be(Seq("1")) 
+    }
+
+    scenario("pageSize 2, page 3 for 'or' query returns 5 and 6") {
+    	val query = or("aField", Seq(
+    		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"
+    	))  
+      val aFields = await(repository.findPaged(2, 3, query)).map(_.aField)
+      aFields should be(Seq("5","6")) 
+    }
+
+    scenario("zero page size returns empty search results") {
+    	val query = or("aField", Seq("1"))
+      await(repository.findPaged(0, 2, query)) should be(Seq.empty)
+    }
+
+    scenario("page beyond valid results returns empty search results") {
+    	val query = or("aField", Seq("1"))
+      await(repository.findPaged(2, 2, query)) should be(Seq.empty)
+    }
+
+    scenario("Non positive page number failure") {
+    	val query = or("aField", Seq("1"))
+      intercept[reactivemongo.core.errors.DetailedDatabaseException] {
+        await(repository.findPaged(5, -1, query))
+      }
+    }
+
+    scenario("Non positive pageSize failure") {
+    	val query = or("aField", Seq("1"))
+      intercept[reactivemongo.core.errors.DetailedDatabaseException] {
+        await(repository.findPaged(-1, 10, query))
+      }
     }
   }
 
@@ -90,6 +127,13 @@ class ReactiveRepositoryPagingSpec extends FeatureSpec with Matchers with MongoS
       val zeros = 24 - s.length
       val zs = (1 to zeros).fold("")((st, n) => s"${st}0")
       s"${zs}$s"
+    }
+
+    def or(fieldName: String, values: Seq[String]) = {
+    	val fieldValues = values.map { v =>
+    		JsObject(Seq((fieldName, JsString(v))))
+    	}
+    	("$or", Json.toJsFieldJsValueWrapper(JsArray(fieldValues)))
     }
 
     def clearTestDataFromMongo() {
