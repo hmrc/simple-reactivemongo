@@ -3,10 +3,12 @@ package uk.gov.hmrc.mongo
 import org.slf4j.LoggerFactory
 import ch.qos.logback.classic.Logger
 import reactivemongo.api.indexes.Index
-import play.api.libs.json.{Format, Json}
-import reactivemongo.api.DB
+import play.api.libs.json.{JsNumber, JsObject, Format, Json}
+import reactivemongo.api.{DB, QueryOpts}
+import reactivemongo.api.SortOrder
 import reactivemongo.core.commands.{Count, LastError}
 import reactivemongo.json.collection.JSONCollection
+import reactivemongo.bson.BSONDocument
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,6 +41,23 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     collection.find(Json.obj(query: _*)).cursor[A].collect[List]()
   }
 
+  def findPaged(pageSize: Int, page: Int, query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
+    val amountToSkip = (page - 1) * pageSize
+    collection.find(Json.obj(query: _*))
+              .sort(JsObject(Seq(("_id", JsNumber(1)))))
+              .options(QueryOpts(amountToSkip, pageSize))
+              .cursor[A]
+              .collect[List](pageSize)
+  }
+
+  def findAllPaged(pageSize: Int, page: Int)(implicit ec: ExecutionContext): Future[List[A]] ={
+    val amountToSkip = (page - 1) * pageSize
+    collection.find(Json.obj())
+              .sort(JsObject(Seq(("_id", JsNumber(1)))))
+              .options(QueryOpts(amountToSkip, pageSize))
+              .cursor[A]
+              .collect[List](pageSize)
+}
   override def findAll(implicit ec: ExecutionContext): Future[List[A]] = collection.find(Json.obj()).cursor[A].collect[List]()
 
   override def findById(id: ID)(implicit ec: ExecutionContext): Future[Option[A]] = {
