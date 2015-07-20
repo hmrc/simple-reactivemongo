@@ -1,7 +1,7 @@
 package uk.gov.hmrc.mongo
 
 import org.joda.time.{DateTime, DateTimeZone}
-import reactivemongo.api.commands.WriteResult
+import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
 import reactivemongo.core.commands.LastError
 
@@ -39,11 +39,11 @@ trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
   def count(implicit ec: ExecutionContext): Future[Int] = ???
 
-  def removeAll(implicit ec: ExecutionContext): Future[WriteResult] = ???
+  def removeAll(writeConcern: WriteConcern)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
-  def removeById(id: ID)(implicit ec: ExecutionContext): Future[WriteResult] = ???
+  def removeById(id: ID, writeConcern: WriteConcern)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
-  def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[LastError] = ???
+  def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
   def drop(implicit ec: ExecutionContext): Future[Boolean] = ???
 
