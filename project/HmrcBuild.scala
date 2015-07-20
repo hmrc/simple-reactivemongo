@@ -31,18 +31,18 @@ object HmrcBuild extends Build {
     .settings(
       autoSourceHeader := false,
       targetJvm := "jvm-1.7",
-      scalaVersion := "2.11.6",
+      scalaVersion := "2.11.7",
       libraryDependencies ++= appDependencies,
       resolvers += Resolver.typesafeRepo("releases"),
-      crossScalaVersions := Seq("2.11.6")
+      crossScalaVersions := Seq("2.11.7")
     )
 }
 
 object Dependencies {
 
   object Compile {
-    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "1.5.0"
-    val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23"
+    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "2.0.0"
+    val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.11.1"
     val playJson = "com.typesafe.play" %% "play-json" % "2.3.9" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.8.0"
     val logback = "ch.qos.logback" % "logback-classic" % "1.1.2"
