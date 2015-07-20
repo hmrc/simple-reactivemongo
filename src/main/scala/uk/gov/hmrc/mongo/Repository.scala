@@ -31,9 +31,11 @@ trait CurrentTime {
 
 trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
-  def findAll(implicit ec: ExecutionContext): Future[List[A]] = ???
+  import reactivemongo.api.ReadPreference
 
-  def findById(id: ID)(implicit ec: ExecutionContext): Future[Option[A]] = ???
+  def findAll(readPreference: ReadPreference)(implicit ec: ExecutionContext): Future[List[A]] = ???
+
+  def findById(id: ID, readPreference: ReadPreference)(implicit ec: ExecutionContext): Future[Option[A]] = ???
 
   def find(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = ???
 

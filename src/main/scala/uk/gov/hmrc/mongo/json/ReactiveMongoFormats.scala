@@ -3,7 +3,6 @@ package uk.gov.hmrc.mongo.json
 import play.api.libs.json._
 import org.joda.time.{LocalDate, DateTimeZone, DateTime, LocalDateTime}
 import reactivemongo.bson.BSONObjectID
-import reactivemongo.json._, ImplicitBSONHandlers._
 
 object ReactiveMongoFormats extends ReactiveMongoFormats
 

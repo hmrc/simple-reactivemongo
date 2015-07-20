@@ -34,28 +34,32 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   ensureIndexes
 
+  protected def _id(id : ID) = Json.obj("_id" -> id)
+
   override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
-    collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.secondaryPreferred).collect[List]()
+    collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.secondaryPreferred).collect[List]() //TODO: pass in ReadPreference
   }
 
-  override def findAll(implicit ec: ExecutionContext): Future[List[A]] = collection.find(Json.obj()).cursor[A].collect[List]()
+  override def findAll(readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[List[A]] = {
+    collection.find(Json.obj()).cursor[A](readPreference).collect[List]()
+  }
 
-  override def findById(id: ID)(implicit ec: ExecutionContext): Future[Option[A]] = {
-    collection.find(Json.obj("_id" -> id)).one[A]
+  override def findById(id: ID, readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {
+    collection.find(_id(id), readPreference).one[A]
   }
 
   override def count(implicit ec: ExecutionContext): Future[Int] = mongo().command(Count(collection.name))
 
   override def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext) = {
-    collection.remove(Json.obj(), writeConcern, false)
+    collection.remove(Json.obj(), writeConcern)
   }
 
   override def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext) = {
-    collection.remove(Json.obj("_id" -> id), writeConcern, false)
+    collection.remove(_id(id), writeConcern)
   }
 
   override def remove(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext) = {
-    collection.remove(Json.obj(query: _*), WriteConcern.Default, false) //TODO: pass in the WriteConcern
+    collection.remove(Json.obj(query: _*), WriteConcern.Default) //TODO: pass in the WriteConcern
   }
 
   override def drop(implicit ec: ExecutionContext): Future[Boolean] = collection.drop.recover[Boolean] {

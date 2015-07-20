@@ -69,7 +69,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
   val uniqueIndexRepository = new FailingIndexesTestRepository
 
   override def beforeEach() {
-    await(repository.removeAll)
+    await(repository.removeAll())
   }
 
   "findAll" should {
@@ -96,7 +96,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       await(created) shouldBe 3
 
-      val result: List[TestObject] = await(repository.findAll)
+      val result: List[TestObject] = await(repository.findAll())
       result.size shouldBe 3
       result should contain(e1)
       result should contain(e2)
