@@ -5,12 +5,11 @@ import ch.qos.logback.classic.Logger
 import reactivemongo.api.indexes.Index
 import play.api.libs.json.{Format, Json}
 import reactivemongo.api.DB
-import reactivemongo.core.commands.{Count, LastError}
+import reactivemongo.core.commands.Count
 import reactivemongo.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 
 abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
@@ -24,6 +23,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   import play.api.libs.json.Json.JsValueWrapper
   import scala.concurrent.ExecutionContext.Implicits.global
   import reactivemongo.core.commands.GetLastError
+  import reactivemongo.json._, ImplicitBSONHandlers._
 
   implicit val domainFormatImplicit = domainFormat
   implicit val idFormatImplicit = idFormat
@@ -47,15 +47,15 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   override def count(implicit ec: ExecutionContext): Future[Int] = mongo().command(Count(collection.name))
 
-  override def removeAll(implicit ec: ExecutionContext): Future[LastError] = collection.remove(Json.obj(), GetLastError(), false)
+  override def removeAll(implicit ec: ExecutionContext) = collection.remove(Json.obj(), GetLastError(), false)
 
-  override def removeById(id: ID)(implicit ec: ExecutionContext): Future[LastError] = collection.remove(Json.obj("_id" -> id), GetLastError(), false)
+  override def removeById(id: ID)(implicit ec: ExecutionContext) = collection.remove(Json.obj("_id" -> id), GetLastError(), false)
 
-  override def remove(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[LastError] = {
+  override def remove(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext) = {
     collection.remove(Json.obj(query: _*), GetLastError(), false)
   }
 
-  override def drop(implicit ec: ExecutionContext): Future[Boolean] = collection.drop.recover {
+  override def drop(implicit ec: ExecutionContext): Future[Boolean] = collection.drop.recover[Boolean] {
     case _ => false
   }
 
