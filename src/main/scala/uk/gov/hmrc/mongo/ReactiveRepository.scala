@@ -9,7 +9,8 @@ import reactivemongo.api.{ReadPreference, DB}
 import reactivemongo.core.commands.Count
 import reactivemongo.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import reactivemongo.json._, ImplicitBSONHandlers._
+import reactivemongo.json._
+import reactivemongo.json.ImplicitBSONHandlers
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -20,7 +21,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
                                                        mc: Option[JSONCollection] = None)
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID], ec : ExecutionContext)
-  extends Repository[A, ID] with Indexes {
+  extends Repository[A, ID] with Indexes with ImplicitBSONHandlers {
 
   import play.api.libs.json.Json.JsValueWrapper
 
@@ -34,7 +35,8 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   ensureIndexes
 
-  protected def _id(id : ID) = Json.obj("_id" -> id)
+  protected val _Id = "_id"
+  protected def _id(id : ID) = Json.obj(_Id -> id)
 
   override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
     collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.secondaryPreferred).collect[List]() //TODO: pass in ReadPreference
