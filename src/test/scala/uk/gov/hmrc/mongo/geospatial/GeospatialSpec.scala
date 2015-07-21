@@ -12,8 +12,7 @@ case class Place(loc : Coordinates, id: BSONObjectID = BSONObjectID.generate)
 object Place{
 
   val formats = ReactiveMongoFormats.mongoEntity({
-    import Coordinates.formats
-    import BSONObjectIdFormats._
+    import ReactiveMongoFormats.objectIdFormats
 
     Json.format[Place]
   })
