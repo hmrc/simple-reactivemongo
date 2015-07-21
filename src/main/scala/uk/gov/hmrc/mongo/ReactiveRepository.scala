@@ -1,16 +1,15 @@
 package uk.gov.hmrc.mongo
 
-import org.slf4j.LoggerFactory
 import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
+import play.api.libs.json.{Format, JsObject, Json}
 import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
-import play.api.libs.json.{Format, Json}
-import reactivemongo.api.{ReadPreference, DB}
+import reactivemongo.api.{DB, ReadPreference}
 import reactivemongo.core.commands.Count
+import reactivemongo.json.ImplicitBSONHandlers
 import reactivemongo.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import reactivemongo.json._
-import reactivemongo.json.ImplicitBSONHandlers
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -47,7 +46,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   }
 
   override def findById(id: ID, readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {
-    collection.find(_id(id)).one(readPreference)[A]
+    collection.find(_id(id)).one[A](readPreference)
   }
 
   override def count(implicit ec: ExecutionContext): Future[Int] = mongo().command(Count(collection.name))
@@ -70,7 +69,14 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   override def save(entity: A)(implicit ec: ExecutionContext) = collection.save(entity)
 
-  override def insert(entity: A)(implicit ec: ExecutionContext) = collection.insert(entity)
+  override def insert(entity: A)(implicit ec: ExecutionContext) = {
+    domainFormat.writes(entity) match {
+        case d @ JsObject(_) => collection.insert(d)
+        case _ =>
+          Future.failed[WriteResult](new Exception("cannot write object"))
+      }
+  }
+
 
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
     collection.indexesManager.ensure(index).recover {

@@ -14,6 +14,8 @@ import reactivemongo.bson.BSONObjectID
 import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
 
+import scala.concurrent.ExecutionContext
+
 case class NestedModel(a: String, b: String)
 
 case class TestObject(aField: String,
@@ -46,7 +48,7 @@ object TestObject {
   }
 }
 
-class SimpleTestRepository(implicit mc: MongoConnector)
+class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
   extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
   override def indexes = Seq(
@@ -55,7 +57,7 @@ class SimpleTestRepository(implicit mc: MongoConnector)
   )
 }
 
-class FailingIndexesTestRepository(implicit mc: MongoConnector)
+class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
   extends ReactiveRepository[TestObject, BSONObjectID]("failingIndexesTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
   override def indexes = Seq(

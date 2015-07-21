@@ -20,7 +20,7 @@ object Place{
 }
 
 
-class GeospatialTestRepository(implicit mc: MongoConnector)
+class GeospatialTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
   extends ReactiveRepository[Place, BSONObjectID]("geospatialTestRepository", mc.db, Place.formats, ReactiveMongoFormats.objectIdFormats)
   with Geospatial[Place, BSONObjectID]{
 
