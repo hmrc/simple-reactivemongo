@@ -64,10 +64,8 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     collection.remove(Json.obj(query: _*), WriteConcern.Default) //TODO: pass in the WriteConcern
   }
 
-  override def drop(implicit ec: ExecutionContext) = collection.drop.recover {
-    case t =>
-      logger.error(message, t)
-      Unit
+  override def drop(implicit ec: ExecutionContext) = collection.drop.map(_ => true).recover[Boolean] {
+    case _ => false
   }
 
   override def save(entity: A)(implicit ec: ExecutionContext) = collection.save(entity)

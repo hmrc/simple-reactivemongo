@@ -47,7 +47,7 @@ trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
   def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
-  def drop(implicit ec: ExecutionContext): Future[Unit] = ???
+  def drop(implicit ec: ExecutionContext): Future[Boolean] = ???
 
   def save(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
