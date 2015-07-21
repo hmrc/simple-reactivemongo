@@ -47,7 +47,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   }
 
   override def findById(id: ID, readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {
-    collection.find(_id(id), readPreference).one[A]
+    collection.find(_id(id)).one(readPreference)[A]
   }
 
   override def count(implicit ec: ExecutionContext): Future[Int] = mongo().command(Count(collection.name))
@@ -64,8 +64,10 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     collection.remove(Json.obj(query: _*), WriteConcern.Default) //TODO: pass in the WriteConcern
   }
 
-  override def drop(implicit ec: ExecutionContext): Future[Boolean] = collection.drop.recover[Boolean] {
-    case _ => false
+  override def drop(implicit ec: ExecutionContext) = collection.drop.recover {
+    case t =>
+      logger.error(message, t)
+      Unit
   }
 
   override def save(entity: A)(implicit ec: ExecutionContext) = collection.save(entity)
