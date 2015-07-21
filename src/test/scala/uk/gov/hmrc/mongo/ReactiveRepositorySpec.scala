@@ -14,6 +14,8 @@ import reactivemongo.bson.BSONObjectID
 import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
 
+import scala.concurrent.ExecutionContext
+
 case class NestedModel(a: String, b: String)
 
 case class TestObject(aField: String,
@@ -46,7 +48,7 @@ object TestObject {
   }
 }
 
-class SimpleTestRepository(implicit mc: MongoConnector)
+class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
   extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
   override def indexes = Seq(
@@ -55,7 +57,7 @@ class SimpleTestRepository(implicit mc: MongoConnector)
   )
 }
 
-class FailingIndexesTestRepository(implicit mc: MongoConnector)
+class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
   extends ReactiveRepository[TestObject, BSONObjectID]("failingIndexesTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
 
   override def indexes = Seq(
@@ -69,7 +71,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
   val uniqueIndexRepository = new FailingIndexesTestRepository
 
   override def beforeEach() {
-    await(repository.removeAll)
+    await(repository.removeAll())
   }
 
   "findAll" should {
@@ -96,7 +98,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       await(created) shouldBe 3
 
-      val result: List[TestObject] = await(repository.findAll)
+      val result: List[TestObject] = await(repository.findAll())
       result.size shouldBe 3
       result should contain(e1)
       result should contain(e2)

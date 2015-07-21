@@ -12,15 +12,14 @@ case class Place(loc : Coordinates, id: BSONObjectID = BSONObjectID.generate)
 object Place{
 
   val formats = ReactiveMongoFormats.mongoEntity({
-    import Coordinates.formats
-    import BSONObjectIdFormats._
+    import ReactiveMongoFormats.objectIdFormats
 
     Json.format[Place]
   })
 }
 
 
-class GeospatialTestRepository(implicit mc: MongoConnector)
+class GeospatialTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
   extends ReactiveRepository[Place, BSONObjectID]("geospatialTestRepository", mc.db, Place.formats, ReactiveMongoFormats.objectIdFormats)
   with Geospatial[Place, BSONObjectID]{
 

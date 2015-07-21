@@ -1,6 +1,7 @@
 package uk.gov.hmrc.mongo
 
 import org.joda.time.{DateTime, DateTimeZone}
+import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
 import reactivemongo.core.commands.LastError
 
@@ -30,24 +31,26 @@ trait CurrentTime {
 
 trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
-  def findAll(implicit ec: ExecutionContext): Future[List[A]] = ???
+  import reactivemongo.api.ReadPreference
 
-  def findById(id: ID)(implicit ec: ExecutionContext): Future[Option[A]] = ???
+  def findAll(readPreference: ReadPreference)(implicit ec: ExecutionContext): Future[List[A]] = ???
+
+  def findById(id: ID, readPreference: ReadPreference)(implicit ec: ExecutionContext): Future[Option[A]] = ???
 
   def find(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = ???
 
   def count(implicit ec: ExecutionContext): Future[Int] = ???
 
-  def removeAll(implicit ec: ExecutionContext): Future[LastError] = ???
+  def removeAll(writeConcern: WriteConcern)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
-  def removeById(id: ID)(implicit ec: ExecutionContext): Future[LastError] = ???
+  def removeById(id: ID, writeConcern: WriteConcern)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
-  def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[LastError] = ???
+  def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
   def drop(implicit ec: ExecutionContext): Future[Boolean] = ???
 
-  def save(entity: A)(implicit ec: ExecutionContext): Future[LastError] = ???
+  def save(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
-  def insert(entity: A)(implicit ec: ExecutionContext): Future[LastError] = ???
+  def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
 }

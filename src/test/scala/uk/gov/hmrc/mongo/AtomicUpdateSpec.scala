@@ -39,8 +39,8 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
   val repositoryWithIdOverride = new AtomicTestRepositoryWithIdOverride
 
   override def beforeEach() {
-    await(repository.removeAll)
-    await(repositoryWithIdOverride.removeAll)
+    await(repository.removeAll())
+    await(repositoryWithIdOverride.removeAll())
   }
 
   "Atomic operations" should {
@@ -55,7 +55,7 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       val result2=await(insertRecord(a2))
       result2.updateType shouldBe a [Saved[_]]
 
-      val result: List[AtomicTestObject] = await(repository.findAll)
+      val result: List[AtomicTestObject] = await(repository.findAll())
 
       result.size shouldBe 2
       result.head.name shouldBe(a1.name)
@@ -75,7 +75,7 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       val result2=await(insertRecordWithIdOverride(a2, "idAtomic"))
       result2.updateType shouldBe a [Saved[_]]
 
-      val result: List[AtomicTestObjectWithIdOverride] = await(repositoryWithIdOverride.findAll)
+      val result: List[AtomicTestObjectWithIdOverride] = await(repositoryWithIdOverride.findAll())
 
       result.size shouldBe 2
       result.head.name shouldBe(a1.name)
@@ -99,7 +99,7 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       )
       atomicResult.updateType shouldBe a [Updated[_]]
 
-      val result: List[AtomicTestObject] = await(repository.findAll)
+      val result: List[AtomicTestObject] = await(repository.findAll())
       result.size shouldBe 1
       result.head shouldBe updateRecord
     }
@@ -119,7 +119,7 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       )
       atomicResult.updateType shouldBe a [Updated[_]]
 
-      val result: List[AtomicTestObject] = await(repository.findAll)
+      val result: List[AtomicTestObject] = await(repository.findAll())
       result.size shouldBe 1
       result.head shouldBe updateRecord
     }
@@ -138,7 +138,7 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       )
       atomicResult.updateType shouldBe a [Updated[_]]
 
-      val result: List[AtomicTestObject] = await(repository.findAll)
+      val result: List[AtomicTestObject] = await(repository.findAll())
       result.size shouldBe 1
       result.head shouldBe updateRecord
     }

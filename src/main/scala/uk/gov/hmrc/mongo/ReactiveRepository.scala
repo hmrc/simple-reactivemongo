@@ -1,16 +1,17 @@
 package uk.gov.hmrc.mongo
 
-import org.slf4j.LoggerFactory
 import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
+import play.api.libs.json.{Format, JsObject, Json}
+import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
-import play.api.libs.json.{Format, Json}
-import reactivemongo.api.DB
-import reactivemongo.core.commands.{Count, LastError}
+import reactivemongo.api.{DB, ReadPreference}
+import reactivemongo.core.commands.Count
+import reactivemongo.json.ImplicitBSONHandlers
 import reactivemongo.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 
 abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
@@ -18,12 +19,10 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        domainFormat: Format[A],
                                                        idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
                                                        mc: Option[JSONCollection] = None)
-                                                      (implicit manifest: Manifest[A], mid: Manifest[ID])
-  extends Repository[A, ID] with Indexes {
+                                                      (implicit manifest: Manifest[A], mid: Manifest[ID], ec : ExecutionContext)
+  extends Repository[A, ID] with Indexes with ImplicitBSONHandlers {
 
   import play.api.libs.json.Json.JsValueWrapper
-  import scala.concurrent.ExecutionContext.Implicits.global
-  import reactivemongo.core.commands.GetLastError
 
   implicit val domainFormatImplicit = domainFormat
   implicit val idFormatImplicit = idFormat
@@ -35,33 +34,49 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   ensureIndexes
 
+  protected val _Id = "_id"
+  protected def _id(id : ID) = Json.obj(_Id -> id)
+
   override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
-    collection.find(Json.obj(query: _*)).cursor[A].collect[List]()
+    collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.secondaryPreferred).collect[List]() //TODO: pass in ReadPreference
   }
 
-  override def findAll(implicit ec: ExecutionContext): Future[List[A]] = collection.find(Json.obj()).cursor[A].collect[List]()
+  override def findAll(readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[List[A]] = {
+    collection.find(Json.obj()).cursor[A](readPreference).collect[List]()
+  }
 
-  override def findById(id: ID)(implicit ec: ExecutionContext): Future[Option[A]] = {
-    collection.find(Json.obj("_id" -> id)).one[A]
+  override def findById(id: ID, readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {
+    collection.find(_id(id)).one[A](readPreference)
   }
 
   override def count(implicit ec: ExecutionContext): Future[Int] = mongo().command(Count(collection.name))
 
-  override def removeAll(implicit ec: ExecutionContext): Future[LastError] = collection.remove(Json.obj(), GetLastError(), false)
-
-  override def removeById(id: ID)(implicit ec: ExecutionContext): Future[LastError] = collection.remove(Json.obj("_id" -> id), GetLastError(), false)
-
-  override def remove(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[LastError] = {
-    collection.remove(Json.obj(query: _*), GetLastError(), false)
+  override def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext) = {
+    collection.remove(Json.obj(), writeConcern)
   }
 
-  override def drop(implicit ec: ExecutionContext): Future[Boolean] = collection.drop.recover {
+  override def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext) = {
+    collection.remove(_id(id), writeConcern)
+  }
+
+  override def remove(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext) = {
+    collection.remove(Json.obj(query: _*), WriteConcern.Default) //TODO: pass in the WriteConcern
+  }
+
+  override def drop(implicit ec: ExecutionContext) = collection.drop.map(_ => true).recover[Boolean] {
     case _ => false
   }
 
   override def save(entity: A)(implicit ec: ExecutionContext) = collection.save(entity)
 
-  override def insert(entity: A)(implicit ec: ExecutionContext) = collection.insert(entity)
+  override def insert(entity: A)(implicit ec: ExecutionContext) = {
+    domainFormat.writes(entity) match {
+        case d @ JsObject(_) => collection.insert(d)
+        case _ =>
+          Future.failed[WriteResult](new Exception("cannot write object"))
+      }
+  }
+
 
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
     collection.indexesManager.ensure(index).recover {

@@ -13,8 +13,8 @@ trait ReactiveMongoFormats {
 
 
   implicit val localDateWrite: Writes[LocalDate] = new Writes[LocalDate] {
-    def writes(date: LocalDate): JsValue = Json.obj(
-      "$date" -> date.toDateTimeAtStartOfDay(DateTimeZone.UTC).getMillis
+    def writes(localDate: LocalDate): JsValue = Json.obj(
+      "$date" -> localDate.toDateTimeAtStartOfDay(DateTimeZone.UTC).getMillis
     )
   }
 
@@ -47,8 +47,8 @@ trait ReactiveMongoFormats {
 
 
   implicit val objectIdWrite: Writes[BSONObjectID] = new Writes[BSONObjectID] {
-    def writes(oid: BSONObjectID): JsValue = Json.obj(
-      "$oid" -> oid.stringify
+    def writes(objectId: BSONObjectID): JsValue = Json.obj(
+      "$oid" -> objectId.stringify
     )
   }
 

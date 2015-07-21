@@ -1,6 +1,7 @@
 package uk.gov.hmrc.mongo.geospatial
 
 
+import reactivemongo.api.ReadPreference
 import uk.gov.hmrc.mongo.ReactiveRepository
 
 trait Geospatial[A, ID] {
@@ -15,7 +16,7 @@ trait Geospatial[A, ID] {
 
   lazy val geo2DSphericalIndex = Index(Seq((LocationField, Geo2DSpherical)), Some("geo2DSphericalIdx"))
 
-  def nearPoint(lon: Double, lat: Double, limit: Int = 100)(implicit ec: ExecutionContext) = collection.find(
+  def nearPoint(lon: Double, lat: Double, limit: Int = 100, readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext) = collection.find(
     Json.obj(
       LocationField -> Json.obj(
         "$near" -> Json.obj(
@@ -26,5 +27,5 @@ trait Geospatial[A, ID] {
         )
       )
     )
-  ).cursor[A].collect[List](limit)
+  ).cursor[A](readPreference).collect[List](limit)
 }
