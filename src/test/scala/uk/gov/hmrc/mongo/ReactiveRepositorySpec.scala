@@ -172,6 +172,20 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
     }
   }
 
+  "Saving an object" should {
+    "not upsert" in {
+
+      await(repository.drop)
+      await(repository.ensureIndexes)
+
+      val originalSave = TestObject("orignal-save")
+      await(repository.save(originalSave))
+
+      val notUpsert = originalSave.copy("should-not-upsert")
+      a [DatabaseException] should be thrownBy await(repository.save(notUpsert))
+    }
+  }
+
   "Creation of Indexes" should {
     "should be done based on provided Indexes" in new LogCapturing {
       await(repository.drop)
