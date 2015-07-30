@@ -67,7 +67,8 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     case _ => false
   }
 
-  override def save(entity: A)(implicit ec: ExecutionContext) = collection.save(entity)
+  @deprecated("use ReactiveRepository#insert() instead", "3.0.1")
+  override def save(entity: A)(implicit ec: ExecutionContext) = insert(entity)
 
   override def insert(entity: A)(implicit ec: ExecutionContext) = {
     domainFormat.writes(entity) match {
