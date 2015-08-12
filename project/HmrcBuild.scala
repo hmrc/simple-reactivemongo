@@ -42,7 +42,8 @@ object Dependencies {
 
   object Compile {
     val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "2.1.3"
-    val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.11.5" //NOTE: in 0.11.6 netty 3.10.0 clashes with Play (2.3.9) using netty 3.9.8
+    //NOTE: 0.11.6 Netty 3.10.4.Final clashes with Play (2.3.9) version of Netty 3.9.8
+    val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.11.5"
     val playJson = "com.typesafe.play" %% "play-json" % "2.3.9" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "1.8.0"
     val logback = "ch.qos.logback" % "logback-classic" % "1.1.2"
