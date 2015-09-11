@@ -30,7 +30,6 @@ object HmrcBuild extends Build {
     .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
     .settings(
       autoSourceHeader := false,
-      targetJvm := "jvm-1.7",
       scalaVersion := "2.11.7",
       libraryDependencies ++= appDependencies,
       resolvers += Resolver.typesafeRepo("releases"),
