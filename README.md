@@ -27,7 +27,7 @@ libraryDependencies ++= Seq(
 )
 ```
 
-*For Java 7 and Play 2.3.x use versions >=4.1.0*
+*For Java 7 and Play 2.3.x use versions <=4.1.0*
 
 
 #### Create a Repository class ###
