@@ -22,10 +22,13 @@ In your project/Build.scala:
 
 ```scala
 libraryDependencies ++= Seq(
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "x.x.x",
-  "com.typesafe.play" %% "play-json" % "2.3.8"
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "[INSERT_VERSION]",
+  "com.typesafe.play" %% "play-json" % "2.x.x"
 )
 ```
+
+*For Java 7 and Play 2.3.x use versions >=4.1.0*
+
 
 #### Create a Repository class ###
 
