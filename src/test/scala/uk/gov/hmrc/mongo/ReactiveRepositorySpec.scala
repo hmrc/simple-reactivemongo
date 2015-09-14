@@ -224,7 +224,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       }
     }
 
-    "should log any error that arises when creating an index" in  {
+    "should log any error when index fails to create" in  {
       withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
         await(uniqueIndexRepository.drop)
 
@@ -234,8 +234,16 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
         await(uniqueIndexRepository.ensureIndexes) shouldBe Seq(false)
         logList.size should be(1)
         logList.head.getMessage shouldBe (uniqueIndexRepository.message)
-
       }
+    }
+
+    "should ignore already applied index" in  {
+      withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
+        await(repository.ensureIndexes) shouldBe Seq(true, true)
+        logList.size should be(0)
+      }
+
+      await(repository.collection.indexesManager.list()).size shouldBe 3
     }
   }
 

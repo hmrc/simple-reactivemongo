@@ -7,6 +7,7 @@ import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{DB, ReadPreference}
 import reactivemongo.core.commands.Count
+import reactivemongo.core.errors.{GenericDatabaseException, DetailedDatabaseException, DatabaseException}
 import reactivemongo.json.ImplicitBSONHandlers
 import reactivemongo.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -30,7 +31,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
 
   protected val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
-  val message: String = "ensuring index failed"
+  val message: String = "Failed to ensure index"
 
   ensureIndexes
 
@@ -79,8 +80,21 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   }
 
 
+  private val DuplicateKeyError = "E11000"
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
-    collection.indexesManager.ensure(index).recover {
+    collection.indexesManager.create(index).map(wr => {
+     if(!wr.ok) {
+       val maybeMsg = for {
+         msg <- wr.errmsg
+         m <- if (msg.contains(DuplicateKeyError)) {
+           // this is for backwards compatibility to mongodb 2.6.x
+           throw new GenericDatabaseException(msg, wr.code)
+         }else Some(msg)
+       } yield m
+       logger.error(s"$message : '${maybeMsg.map(_.toString)}'")
+     }
+     wr.ok
+    }).recover {
       case t =>
         logger.error(message, t)
         false
