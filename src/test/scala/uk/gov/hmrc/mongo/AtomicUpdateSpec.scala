@@ -1,7 +1,7 @@
 package uk.gov.hmrc.mongo
 
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, JsResultException}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import reactivemongo.bson.{BSONObjectID, BSONDocument}
 import reactivemongo.api.indexes.{IndexType, Index}
@@ -62,6 +62,16 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       result.head.id shouldBe a[BSONObjectID]
       result.tail.head.name shouldBe(a2.name)
       result.tail.head.id shouldBe a[BSONObjectID]
+    }
+    
+    "Fail with a JsResultException if the Reads object fails to decode the stored JSON." in {
+
+      val incomplete = "some name"
+
+      val result = repository.atomicUpsert(findByField(incomplete),
+        BSONDocument("$set" -> BSONDocument("name" -> incomplete)))
+        
+      await(result.failed) shouldBe a[JsResultException]
     }
 
     "Create new records overriding the object Id attribute, verify atomics can return the correct update type of 'Saved'." in {
