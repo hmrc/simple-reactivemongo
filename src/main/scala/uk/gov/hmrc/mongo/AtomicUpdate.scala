@@ -30,6 +30,21 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
     atomicSaveOrUpdate(finder, modifierBson, upsert = true, idAttributeName)
                       .map{_.getOrElse(
                                throw new EntityNotFoundException("Failed to receive updated object!"))}
+  
+  /**
+   *
+   * @param finder          The finder to find an existing record.
+   * @param modifierBson    The modifier to be applied
+   * @param idAttributeName Optional value to override the default object Id for the collection. Atomics MUST have a record Id to store
+   *                        a BSONObjectId in order to understand if the update is an upsert or update.
+   * @param ec
+   * @param reads
+   * @return
+   */
+  def atomicUpdate(finder: BSONDocument, modifierBson: BSONDocument, idAttributeName:String = "_id")
+                  (implicit ec: ExecutionContext, reads: Reads[T])
+                   : Future[Option[DatabaseUpdate[T]]] =
+    atomicSaveOrUpdate(finder, modifierBson, upsert = false, idAttributeName)
 
   /**
    *
@@ -42,6 +57,7 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
    * @param reads
    * @return
    */
+  @deprecated("use atomicUpsert or atomicUpdate instead", "4.3.0")
   def atomicSaveOrUpdate(finder: BSONDocument, modifierBson: BSONDocument, upsert: Boolean, idAttributeName:String = "_id")
                         (implicit ec: ExecutionContext, reads: Reads[T])
                         : Future[Option[DatabaseUpdate[T]]] = withCurrentTime {

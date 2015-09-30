@@ -114,7 +114,7 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       result.head shouldBe updateRecord
     }
 
-    "Find an exiting record and update multiple record fields " in {
+    "Find an existing record and update multiple record fields atomicUpsert" in {
 
       val existingRecord=AtomicTestObject("namea","othervalueb", id = BSONObjectID.generate)
       val updateRecord=existingRecord.copy(name="updated", someOtherField="other data")
@@ -127,7 +127,28 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
           "$set" -> BSONDocument("someOtherField" -> updateRecord.someOtherField)
         ))
       )
-      atomicResult.updateType shouldBe a [Updated[_]]
+      atomicResult.updateType shouldBe an [Updated[_]]
+
+      val result: List[AtomicTestObject] = await(repository.findAll())
+      result.size shouldBe 1
+      result.head shouldBe updateRecord
+    }
+    
+    "Find an existing record and update multiple record fields using atomicUpdate" in {
+
+      val existingRecord=AtomicTestObject("namea","othervalueb", id = BSONObjectID.generate)
+      val updateRecord=existingRecord.copy(name="updated", someOtherField="other data")
+
+      await(repository.save(existingRecord))
+
+      val atomicResult=await( repository.atomicUpdate(findByField(existingRecord.name),
+        BSONDocument(
+          "$set" -> BSONDocument("name" -> updateRecord.name),
+          "$set" -> BSONDocument("someOtherField" -> updateRecord.someOtherField)
+        ))
+      )
+      atomicResult shouldBe defined
+      atomicResult.get.updateType shouldBe an [Updated[_]]
 
       val result: List[AtomicTestObject] = await(repository.findAll())
       result.size shouldBe 1
@@ -153,14 +174,21 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       result.head shouldBe updateRecord
     }
 
-    "Attempting to update a record which does not exist will result in no record returned" in {
+    "Attempting to update a record which does not exist using atomicSaveOrUpdate will result in no record returned" in {
 
-      val existingRecord=AtomicTestObject("ddd", "eee", id=BSONObjectID.generate)
-
-      val result=await(repository.atomicSaveOrUpdate(findByField(existingRecord.name),
+      val result=await(repository.atomicSaveOrUpdate(findByField("non-existing"),
             BSONDocument(
             "$set" -> BSONDocument("name" -> "newname")
         ),false))
+      result shouldBe None
+    }
+    
+    "Attempting to update a record which does not exist using atomicUpdate will result in no record returned" in {
+
+      val result=await(repository.atomicUpdate(findByField("non-existing"),
+            BSONDocument(
+            "$set" -> BSONDocument("name" -> "newname")
+        )))
       result shouldBe None
     }
   }
