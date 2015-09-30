@@ -1,6 +1,6 @@
 package uk.gov.hmrc.mongo
 
-import play.api.libs.json.{Writes, Reads}
+import play.api.libs.json.{Writes, Reads, JsSuccess, JsError, JsResultException}
 import reactivemongo.bson.{BSONObjectID, BSONDocument}
 import reactivemongo.core.commands.{LastError, Update, FindAndModify}
 import reactivemongo.json.ImplicitBSONHandlers.JsObjectReader
@@ -83,17 +83,16 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
   private def toDbUpdate(s: BSONDocument, insertedId: Option[BSONObjectID])
                         (implicit reads: Reads[T]): Future[DatabaseUpdate[T]] = {
 
-    def createResult(result: T) = {
-      if (insertedId.isDefined &&
-          isInsertion(insertedId.getOrElse(throw new Exception("Failure!")), result))
+    def createResult(result: T) = insertedId match {
+      case Some(insertedId) if isInsertion(insertedId, result) =>
         DatabaseUpdate(le(updatedExisting = false), Saved[T](result))
-      else
+      case _ =>
         DatabaseUpdate(le(updatedExisting = true), Updated[T](result, result))
     }
 
-    JsObjectReader.read(s).asOpt[T] match {
-      case Some(result) => Future.successful(createResult(result))
-      case None => Future.failed(new Exception("Failed to deserialize returned object into type!"))
+    JsObjectReader.read(s).validate[T] match {
+      case JsSuccess(result, _) => Future.successful(createResult(result))
+      case JsError(errors) => Future.failed(new JsResultException(errors))
     }
   }
 
