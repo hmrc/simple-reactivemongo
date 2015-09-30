@@ -22,11 +22,10 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
    *                        a BSONObjectId in order to understand if the update is an upsert or update.
    * @param ec
    * @param reads
-   * @param writes
    * @return
    */
   def atomicUpsert(finder: BSONDocument, modifierBson: BSONDocument, idAttributeName:String = "_id")
-                  (implicit ec: ExecutionContext, reads: Reads[T], writes: Writes[T])
+                  (implicit ec: ExecutionContext, reads: Reads[T])
                    : Future[DatabaseUpdate[T]] =
     atomicSaveOrUpdate(finder, modifierBson, upsert = true, idAttributeName)
                       .map{_.getOrElse(
@@ -41,11 +40,10 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
    *                        a BSONObjectId in order to understand if the update is an upsert or update.
    * @param ec
    * @param reads
-   * @param writes
    * @return
    */
   def atomicSaveOrUpdate(finder: BSONDocument, modifierBson: BSONDocument, upsert: Boolean, idAttributeName:String = "_id")
-                        (implicit ec: ExecutionContext, reads: Reads[T], writes: Writes[T])
+                        (implicit ec: ExecutionContext, reads: Reads[T])
                         : Future[Option[DatabaseUpdate[T]]] = withCurrentTime {
       implicit time =>
 
