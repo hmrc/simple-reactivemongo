@@ -122,7 +122,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       await(created) shouldBe 6
 
-      val result = await(repository.findAll(pageSize = Some(5)))
+      val result = await(repository.findAll(limit = Some(5)))
       result.size shouldBe 5
       result should contain(e1)
       result should contain(e2)
@@ -146,7 +146,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       await(created) shouldBe 6
 
-      val result = await(repository.findAll(fromId = Some(e5.id)))
+      val result = await(repository.findAll(afterId = Some(e5.id)))
       result.size shouldBe 1
       result should not contain e5
       result should contain(e6)
