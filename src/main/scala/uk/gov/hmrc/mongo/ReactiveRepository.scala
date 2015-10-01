@@ -6,6 +6,7 @@ import play.api.libs.json.{Format, JsObject, Json}
 import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{DB, ReadPreference}
+import reactivemongo.bson.BSONDocument
 import reactivemongo.core.commands.Count
 import reactivemongo.core.errors.{GenericDatabaseException, DetailedDatabaseException, DatabaseException}
 import reactivemongo.json.ImplicitBSONHandlers
@@ -47,7 +48,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     val query = afterId.map(id => Json.obj("_id" -> Json.obj("$gt" -> id))).getOrElse(Json.obj())
     val size = limit.getOrElse(Int.MaxValue)
 
-    collection.find(query).cursor[A](readPreference).collect[List](size)
+    collection.find(query).sort(Json.obj("_id" -> 1)).cursor[A](readPreference).collect[List](size)
   }
 
   override def findById(id: ID, readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {
