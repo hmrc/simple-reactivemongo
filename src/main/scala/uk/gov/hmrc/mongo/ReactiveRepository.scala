@@ -42,8 +42,12 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.secondaryPreferred).collect[List]() //TODO: pass in ReadPreference
   }
 
-  override def findAll(readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[List[A]] = {
-    collection.find(Json.obj()).cursor[A](readPreference).collect[List]()
+  override def findAll(readPreference: ReadPreference = ReadPreference.secondaryPreferred, pageSize: Option[Int] = None, fromId: Option[ID] = None)
+                      (implicit ec: ExecutionContext): Future[List[A]] = {
+    val query = fromId.map(id => Json.obj("_id" -> Json.obj("$gt" -> id))).getOrElse(Json.obj())
+    val limit = pageSize.getOrElse(Int.MaxValue)
+
+    collection.find(query).cursor[A](readPreference).collect[List](limit)
   }
 
   override def findById(id: ID, readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {

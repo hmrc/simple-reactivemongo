@@ -76,19 +76,20 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
   "findAll" should {
 
-    "return all created records" in {
+    val e1 = TestObject("1")
+    val e2 = TestObject("2", optionalCollection = Some(List(NestedModel("A", "B"), NestedModel("C", "D"))))
+    val e3 = TestObject("3", nestedMapOfCollections = Map(
+      "level_one" -> List(
+        Map("level_two_1" -> Seq(NestedModel("A1", "B1"), NestedModel("C1", "D1"), NestedModel("E1", "F1"))),
+        Map("level_two_2" -> Seq(NestedModel("A2", "B2"))),
+        Map("level_two_3" -> Seq(NestedModel("A1", "B1"), NestedModel("C1", "D1"), NestedModel("E1", "F1"), NestedModel("G2", "H2")))
+      )
+    ))
+    val e4 = TestObject("4")
+    val e5 = TestObject("5")
+    val e6 = TestObject("6")
 
-      val e1 = TestObject("1")
-      val e2 = TestObject("2", optionalCollection = Some(List(NestedModel("A", "B"), NestedModel("C", "D"))))
-      val e3 = TestObject("3", nestedMapOfCollections = Map(
-        "level_one" -> List(
-          Map("level_two_1" -> Seq(NestedModel("A1", "B1"), NestedModel("C1", "D1"), NestedModel("E1", "F1"))),
-          Map("level_two_2" -> Seq(NestedModel("A2", "B2"))),
-          Map("level_two_3" -> Seq(NestedModel("A1", "B1"), NestedModel("C1", "D1"), NestedModel("E1", "F1"), NestedModel("G2", "H2")))
-        )
-      ))
-      val e4 = TestObject("4")
-
+    "return all created records when given no limits" in {
       val created = for {
         res1 <- repository.save(e1)
         res2 <- repository.save(e2)
@@ -106,6 +107,49 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       result should not contain (e4)
 
+    }
+
+    "return a maximum of five records when given a page size of five" in {
+      val created = for {
+        _ <- repository.insert(e1)
+        _ <- repository.insert(e2)
+        _ <- repository.insert(e3)
+        _ <- repository.insert(e4)
+        _ <- repository.insert(e5)
+        _ <- repository.insert(e6)
+        countResult <- repository.count
+      } yield countResult
+
+      await(created) shouldBe 6
+
+      val result = await(repository.findAll(pageSize = Some(5)))
+      result.size shouldBe 5
+      result should contain(e1)
+      result should contain(e2)
+      result should contain(e3)
+      result should contain(e4)
+      result should contain(e5)
+
+      result should not contain(e6)
+    }
+
+    "skip the first five records when searching from the id of the fifth record" in {
+      val created = for {
+        _ <- repository.insert(e1)
+        _ <- repository.insert(e2)
+        _ <- repository.insert(e3)
+        _ <- repository.insert(e4)
+        _ <- repository.insert(e5)
+        _ <- repository.insert(e6)
+        countResult <- repository.count
+      } yield countResult
+
+      await(created) shouldBe 6
+
+      val result = await(repository.findAll(fromId = Some(e5.id)))
+      result.size shouldBe 1
+      result should not contain e5
+      result should contain(e6)
     }
 
   }
