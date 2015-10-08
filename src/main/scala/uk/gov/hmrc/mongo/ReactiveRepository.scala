@@ -39,14 +39,14 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   protected def _id(id : ID) = Json.obj(_Id -> id)
 
   override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
-    collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.secondaryPreferred).collect[List]() //TODO: pass in ReadPreference
+    collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.primaryPreferred).collect[List]() //TODO: pass in ReadPreference
   }
 
-  override def findAll(readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[List[A]] = {
+  override def findAll(readPreference: ReadPreference = ReadPreference.primaryPreferred)(implicit ec: ExecutionContext): Future[List[A]] = {
     collection.find(Json.obj()).cursor[A](readPreference).collect[List]()
   }
 
-  override def findById(id: ID, readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {
+  override def findById(id: ID, readPreference: ReadPreference = ReadPreference.primaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {
     collection.find(_id(id)).one[A](readPreference)
   }
 
