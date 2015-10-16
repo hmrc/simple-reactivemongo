@@ -6,7 +6,6 @@ import play.api.libs.json.{Format, JsObject, Json}
 import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{DB, ReadPreference}
-import reactivemongo.bson.BSONDocument
 import reactivemongo.core.commands.Count
 import reactivemongo.core.errors.{GenericDatabaseException, DetailedDatabaseException, DatabaseException}
 import reactivemongo.json.ImplicitBSONHandlers
@@ -40,10 +39,10 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   protected def _id(id : ID) = Json.obj(_Id -> id)
 
   override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
-    collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.secondaryPreferred).collect[List]() //TODO: pass in ReadPreference
+    collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.primaryPreferred).collect[List]() //TODO: pass in ReadPreference
   }
 
-  override def findAll(readPreference: ReadPreference = ReadPreference.secondaryPreferred, limit: Option[Int] = None, afterId: Option[ID] = None)
+  override def findAll(readPreference: ReadPreference = ReadPreference.primaryPreferred, limit: Option[Int] = None, afterId: Option[ID] = None)
                       (implicit ec: ExecutionContext): Future[List[A]] = {
     val query = afterId.map(id => Json.obj("_id" -> Json.obj("$gt" -> id))).getOrElse(Json.obj())
     val size = limit.getOrElse(Int.MaxValue)
@@ -51,7 +50,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     collection.find(query).sort(Json.obj("_id" -> 1)).cursor[A](readPreference).collect[List](size)
   }
 
-  override def findById(id: ID, readPreference: ReadPreference = ReadPreference.secondaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {
+  override def findById(id: ID, readPreference: ReadPreference = ReadPreference.primaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = {
     collection.find(_id(id)).one[A](readPreference)
   }
 
