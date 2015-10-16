@@ -18,9 +18,11 @@ there is a specialized collection called `JSONCollection` that deals naturally w
 
 #### Add simple-reactivemongo
 
-In your project/Build.scala:
+In your project/build.sbt:
 
 ```scala
+resolvers += Resolver.bintrayRepo("hmrc", "releases")
+
 libraryDependencies ++= Seq(
   "uk.gov.hmrc" %% "simple-reactivemongo" % "[INSERT_VERSION]",
   "com.typesafe.play" %% "play-json" % "2.x.x"
@@ -37,7 +39,7 @@ Create a `case class` that represents to serialise to mongo.
 Create [JSON Read/Write](http://www.playframework.com/documentation/2.2.x/ScalaJsonCombinators) converters. Or if you are doing nothing special create a companion object for the case class
 with an implicit member set by play.api.libs.json.Json.format[A]
 
-Extend [ResponsiveRepository](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/uk/gov/hmrc/mongo/ReactiveRepository.scala) which will provide you with some commonly used functionality.
+Extend [ReactiveRepository](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/uk/gov/hmrc/mongo/ReactiveRepository.scala) which will provide you with some commonly used functionality.
 
 If the repository requires any indexes override ```indexes: Seq[Index]``` to provide a sequence of indexes that will be applied. Any errors will be logged should they fail.
 
