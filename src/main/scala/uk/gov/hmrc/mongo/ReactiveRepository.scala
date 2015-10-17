@@ -30,7 +30,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   lazy val collection = mc.getOrElse(mongo().collection[JSONCollection](collectionName))
 
-  protected val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  protected val logger = LoggerFactory.getLogger(this.getClass)
   val message: String = "Failed to ensure index"
 
   ensureIndexes
