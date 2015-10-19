@@ -79,6 +79,22 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
       }
   }
 
+  override def bulkInsert(entities: Seq[A])(implicit ec: ExecutionContext): Future[MultiBulkWriteResult] = {
+    val docs = entities.map(toJsObject)
+    val failures = docs.collect { case Left(f) => f }
+    val successes = docs.collect { case Right(x) => x }
+    if (failures.isEmpty)
+      collection.bulkInsert(successes.toStream, false)
+    else
+      Future.failed[MultiBulkWriteResult](new BulkInsertRejected())
+  }
+
+  private def toJsObject(entity: A) = domainFormat.writes(entity) match {
+    case j: JsObject => Right(j)
+    case _ => Left(entity)
+  }
+
+  class BulkInsertRejected extends Exception("Could not write some or all items")
 
   private val DuplicateKeyError = "E11000"
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
