@@ -93,7 +93,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     case _ => Left(entity)
   }
 
-  class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
+  class BulkInsertRejected extends Exception("Could not write some or all items")
 
   private val DuplicateKeyError = "E11000"
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
