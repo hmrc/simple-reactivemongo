@@ -82,9 +82,10 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   override def bulkInsert(entities: Seq[A])(implicit ec: ExecutionContext): Future[MultiBulkWriteResult] = {
     val docs = entities.map(toJsObject)
     val failures = docs.collect { case Left(f) => f }
-    val successes = docs.collect { case Right(x) => x }
-    if (failures.isEmpty)
+    if (failures.isEmpty) {
+      val successes = docs.collect { case Right(x) => x }
       collection.bulkInsert(successes.toStream, false)
+    }
     else
       Future.failed[MultiBulkWriteResult](new BulkInsertRejected())
   }
