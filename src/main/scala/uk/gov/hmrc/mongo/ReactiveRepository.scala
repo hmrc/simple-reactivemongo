@@ -14,13 +14,12 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
 abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        mongo: () => DB,
                                                        domainFormat: Format[A],
                                                        idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
                                                        mc: Option[JSONCollection] = None)
-                                                      (implicit manifest: Manifest[A], mid: Manifest[ID], ec : ExecutionContext)
+                                                      (implicit manifest: Manifest[A], mid: Manifest[ID])
   extends Repository[A, ID] with Indexes with ImplicitBSONHandlers {
 
   import play.api.libs.json.Json.JsValueWrapper
@@ -33,7 +32,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   protected val logger = LoggerFactory.getLogger(this.getClass)
   val message: String = "Failed to ensure index"
 
-  ensureIndexes
+  ensureIndexes(scala.concurrent.ExecutionContext.Implicits.global)
 
   protected val _Id = "_id"
   protected def _id(id : ID) = Json.obj(_Id -> id)
