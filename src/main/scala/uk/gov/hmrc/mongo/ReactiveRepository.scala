@@ -18,7 +18,8 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        mongo: () => DB,
                                                        domainFormat: Format[A],
                                                        idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
-                                                       mc: Option[JSONCollection] = None)
+                                                       mc: Option[JSONCollection] = None,
+                                                       ecForInitialIndexChecks: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global)
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
   extends Repository[A, ID] with Indexes with ImplicitBSONHandlers {
 
@@ -32,7 +33,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   protected val logger = LoggerFactory.getLogger(this.getClass)
   val message: String = "Failed to ensure index"
 
-  ensureIndexes(scala.concurrent.ExecutionContext.Implicits.global)
+  ensureIndexes(ecForInitialIndexChecks)
 
   protected val _Id = "_id"
   protected def _id(id : ID) = Json.obj(_Id -> id)
