@@ -82,10 +82,9 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   override def bulkInsert(entities: Seq[A])(implicit ec: ExecutionContext): Future[MultiBulkWriteResult] = {
     val docs = entities.map(toJsObject)
     val failures = docs.collect { case Left(f) => f }
-    if (failures.isEmpty) {
-      val successes = docs.collect { case Right(x) => x }
+    lazy val successes = docs.collect { case Right(x) => x }
+    if (failures.isEmpty)
       collection.bulkInsert(successes.toStream, false)
-    }
     else
       Future.failed[MultiBulkWriteResult](new BulkInsertRejected())
   }
@@ -95,7 +94,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     case _ => Left(entity)
   }
 
-  class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
+  class BulkInsertRejected extends Exception("Could not write some or all items")
 
   private val DuplicateKeyError = "E11000"
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
