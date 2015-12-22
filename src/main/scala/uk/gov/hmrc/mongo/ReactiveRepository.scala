@@ -18,8 +18,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        mongo: () => DB,
                                                        domainFormat: Format[A],
                                                        idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
-                                                       mc: Option[JSONCollection] = None,
-                                                       initialisingEc: ExecutionContext = scala.concurrent.ExecutionContext.global)
+                                                       mc: Option[JSONCollection] = None)
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
   extends Repository[A, ID] with Indexes with ImplicitBSONHandlers {
 
@@ -33,7 +32,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   protected val logger = LoggerFactory.getLogger(this.getClass)
   val message: String = "Failed to ensure index"
 
-  ensureIndexes(initialisingEc)
+  ensureIndexes(scala.concurrent.ExecutionContext.Implicits.global)
 
   protected val _Id = "_id"
   protected def _id(id : ID) = Json.obj(_Id -> id)
@@ -94,7 +93,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
     case _ => Left(entity)
   }
 
-  class BulkInsertRejected extends Exception("Could not write some or all items")
+  class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
 
   private val DuplicateKeyError = "E11000"
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
