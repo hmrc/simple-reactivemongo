@@ -18,8 +18,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        mongo: () => DB,
                                                        domainFormat: Format[A],
                                                        idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
-                                                       mc: Option[JSONCollection] = None,
-                                                       initialisingEc: ExecutionContext = scala.concurrent.ExecutionContext.global)
+                                                       mc: Option[JSONCollection] = None)
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
   extends Repository[A, ID] with Indexes with ImplicitBSONHandlers {
 
@@ -33,7 +32,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   protected val logger = LoggerFactory.getLogger(this.getClass)
   val message: String = "Failed to ensure index"
 
-  ensureIndexes(initialisingEc)
+  ensureIndexes(scala.concurrent.ExecutionContext.Implicits.global)
 
   protected val _Id = "_id"
   protected def _id(id : ID) = Json.obj(_Id -> id)
@@ -78,6 +77,23 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
           Future.failed[WriteResult](new Exception("cannot write object"))
       }
   }
+
+  override def bulkInsert(entities: Seq[A])(implicit ec: ExecutionContext): Future[MultiBulkWriteResult] = {
+    val docs = entities.map(toJsObject)
+    val failures = docs.collect { case Left(f) => f }
+    lazy val successes = docs.collect { case Right(x) => x }
+    if (failures.isEmpty)
+      collection.bulkInsert(successes.toStream, false)
+    else
+      Future.failed[MultiBulkWriteResult](new BulkInsertRejected())
+  }
+
+  private def toJsObject(entity: A) = domainFormat.writes(entity) match {
+    case j: JsObject => Right(j)
+    case _ => Left(entity)
+  }
+
+  class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
 
   private val DuplicateKeyError = "E11000"
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {

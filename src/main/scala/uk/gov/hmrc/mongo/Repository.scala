@@ -53,4 +53,6 @@ trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
   def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] = ???
 
+  def bulkInsert(entities: Seq[A])(implicit ec: ExecutionContext): Future[MultiBulkWriteResult]
+
 }

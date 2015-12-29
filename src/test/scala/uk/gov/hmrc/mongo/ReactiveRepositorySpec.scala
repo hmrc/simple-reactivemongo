@@ -291,6 +291,23 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
       result.get.location shouldBe coordinates
     }
   }
+
+  "Bulk insert" should {
+    val now = LocalDate.now(DateTimeZone.UTC)
+    val objects = Seq(
+      TestObject("firstItem", Some("1"), Some(List(NestedModel("a", "b"))), date = now),
+      TestObject("secondItem", Some("2"), Some(List(NestedModel("c", "d"))), date = now.plusDays(1)),
+      TestObject("thirdItem", Some("3"), Some(List(NestedModel("e", "f"))), date = now.plusDays(2)),
+      TestObject("fourthItem", Some("4"), Some(List(NestedModel("g", "h"))), date = now.plusDays(3)),
+      TestObject("fifthItem", Some("5"), Some(List(NestedModel("i", "j"))), date = now.plusDays(4))
+    )
+
+    "insert all entities supplied" in {
+      await(repository.bulkInsert(objects))
+      val result = await(repository.findAll())
+      result shouldBe objects
+    }
+  }
 }
 
 trait LogCapturing {
