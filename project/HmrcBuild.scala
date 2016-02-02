@@ -40,7 +40,7 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
-    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "2.2.1"
+    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "2.3.0"
     //NOTE: 0.11.6 Netty 3.10.4.Final clashes with Play (2.3.10) version of Netty 3.9.8
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.11.5"
     val playJson = "com.typesafe.play" %% "play-json" % "2.3.10" % "provided"
