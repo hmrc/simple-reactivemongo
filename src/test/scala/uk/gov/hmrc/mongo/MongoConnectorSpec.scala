@@ -1,12 +1,23 @@
 package uk.gov.hmrc.mongo
 
-import org.scalatest.{Matchers, WordSpec}
+
+import java.util.concurrent.TimeUnit
+
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import reactivemongo.api.{MongoConnectionOptions, MongoDriver}
+import reactivemongo.core.errors.GenericDriverException
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Await, Future}
+//import ExecutionContext.Implicits.global
+
 
 /**
   *
   * https://docs.mongodb.org/manual/reference/connection-string/#connections-connection-options
   */
-class MongoConnectorSpec extends WordSpec with Matchers {
+class MongoConnectorSpec extends WordSpec with Matchers  {
 
   "MongoConnector" should {
     "create a Mongo connection with the given options" in {
@@ -17,3 +28,5 @@ class MongoConnectorSpec extends WordSpec with Matchers {
     }
   }
 }
+
+
