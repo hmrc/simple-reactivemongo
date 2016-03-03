@@ -2,11 +2,12 @@ package uk.gov.hmrc.mongo
 
 import org.scalatest.{Matchers, WordSpec}
 
+
 /**
   *
   * https://docs.mongodb.org/manual/reference/connection-string/#connections-connection-options
   */
-class MongoConnectorSpec extends WordSpec with Matchers {
+class MongoConnectorSpec extends WordSpec with Matchers  {
 
   "MongoConnector" should {
     "create a Mongo connection with the given options" in {
@@ -17,3 +18,5 @@ class MongoConnectorSpec extends WordSpec with Matchers {
     }
   }
 }
+
+

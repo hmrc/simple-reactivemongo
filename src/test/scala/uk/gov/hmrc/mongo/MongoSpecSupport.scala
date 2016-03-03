@@ -9,9 +9,9 @@ import reactivemongo.api.FailoverStrategy
 
 trait MongoSpecSupport {
 
-  protected val databaseName = "test-" + this.getClass.getSimpleName
+  protected def databaseName = "test-" + this.getClass.getSimpleName
 
-  protected val mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName"
+  protected def mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName"
 
   implicit val mongoConnectorForTest = new MongoConnector(mongoUri)
 
