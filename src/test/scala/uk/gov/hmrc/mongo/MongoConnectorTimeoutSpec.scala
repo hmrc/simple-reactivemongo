@@ -10,14 +10,14 @@ class MongoConnectorTimeoutSpec extends WordSpec with Matchers with MongoSpecSup
 
   private lazy val ProxyPort = 1999
 
-  lazy val SocketTimeoutMs = 200
-  lazy val ProxyIdleTimeMs = 400
+  lazy val SocketTimeoutMs = 400
+  lazy val ProxyIdleTimeMs = 800
 
   override def mongoUri = s"mongodb://localhost:$ProxyPort/mongo?connectTimeoutMS=100&socketTimeoutMS=$SocketTimeoutMs"
 
   "MongoConnector going via a proxy" should {
 
-    "timeout when socket appears idle for 400 ms and the socket timeout is set to 100ms" in {
+    "timeout when socket appears idle for 800 ms and the socket timeout is set to 400ms" in {
 
       val resultF = Future { SleepyProxy.start(ProxyPort, 27017, "localhost") }.map { ctx =>
         try {
