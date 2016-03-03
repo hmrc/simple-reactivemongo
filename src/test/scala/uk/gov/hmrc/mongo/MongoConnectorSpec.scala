@@ -1,16 +1,6 @@
 package uk.gov.hmrc.mongo
 
-
-import java.util.concurrent.TimeUnit
-
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import reactivemongo.api.{MongoConnectionOptions, MongoDriver}
-import reactivemongo.core.errors.GenericDriverException
-
-import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContext, Await, Future}
-//import ExecutionContext.Implicits.global
+import org.scalatest.{Matchers, WordSpec}
 
 
 /**

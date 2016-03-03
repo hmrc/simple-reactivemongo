@@ -86,7 +86,6 @@ class SleepyProxyInboundHandler(cf: ClientSocketChannelFactory, remoteHost: Stri
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     val msg: ChannelBuffer = e.getMessage.asInstanceOf[ChannelBuffer]
     try {
-      System.out.println("sleepTime = " + this.sleepTime)
       Thread.sleep(this.sleepTime.get)
     } catch {
       case e1: InterruptedException => {
