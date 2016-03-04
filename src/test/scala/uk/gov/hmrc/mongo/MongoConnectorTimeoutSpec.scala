@@ -17,7 +17,7 @@ class MongoConnectorTimeoutSpec extends WordSpec with Matchers with MongoSpecSup
 
   "MongoConnector going via a proxy" should {
 
-    "timeout when socket appears idle for 800 ms and the socket timeout is set to 400ms" in {
+    "timeout when socket appears idle for 800 ms and the socket timeout is set to 400ms" ignore {
 
       val resultF = Future { SleepyProxy.start(ProxyPort, 27017, "localhost") }.map { ctx =>
         try {
