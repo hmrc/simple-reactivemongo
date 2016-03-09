@@ -5,8 +5,6 @@ import uk.gov.hmrc.versioning.SbtGitVersioning
 
 object HmrcBuild extends Build {
 
-  import uk.gov.hmrc.DefaultBuildSettings
-  import DefaultBuildSettings._
   import SbtAutoBuildPlugin._
 
   val nameApp = "simple-reactivemongo"
@@ -46,9 +44,9 @@ object Dependencies {
     //NOTE: 0.11.6 Netty 3.10.4.Final clashes with Play (2.3.10) version of Netty 3.9.8
 
     // USING HMRC FORK OF REACTIVEMONGO - https://github.com/hmrc/ReactiveMongo
-    val reactiveMongo0 = "uk.gov.hmrc" %% "reactivemongo" % "0.11.6"
-    val reactiveMongo1 = "uk.gov.hmrc" %% "reactivemongo-bson" % "0.11.6"
-    val reactiveMongo2 = "uk.gov.hmrc" %% "reactivemongo-bson-macros" % "0.11.6"
+    val reactiveMongo0 = "uk.gov.hmrc" %% "reactivemongo" % "0.11.7"
+    val reactiveMongo1 = "uk.gov.hmrc" %% "reactivemongo-bson" % "0.11.7"
+    val reactiveMongo2 = "uk.gov.hmrc" %% "reactivemongo-bson-macros" % "0.11.7"
 
 
     val playJson = "com.typesafe.play" %% "play-json" % "2.3.10" % "provided"
