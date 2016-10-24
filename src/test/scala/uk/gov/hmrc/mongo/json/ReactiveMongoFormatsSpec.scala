@@ -23,10 +23,10 @@ class ReactiveMongoFormatsSpec extends WordSpec with Matchers {
       val entity = Foo("id", "name", 22)
       val defaultFormat = Json.format[Foo]
       val json = ReactiveMongoFormats.mongoEntity(defaultFormat).writes(entity)
-      json \ "_id" shouldBe JsString("id")
-      json \ "name" shouldBe JsString("name")
-      json \ "_age" shouldBe JsNumber(22)
-      json \ "id" shouldBe a[JsUndefined]
+      (json \ "_id").get shouldBe JsString("id")
+      (json \ "name").get shouldBe JsString("name")
+      (json \ "_age").get shouldBe JsNumber(22)
+      (json \ "id").toOption shouldBe None
 
     }
 
