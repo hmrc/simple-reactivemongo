@@ -33,7 +33,8 @@ trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
   import reactivemongo.api.ReadPreference
 
-  def findAll(readPreference: ReadPreference = ReadPreference.primaryPreferred)(implicit ec: ExecutionContext): Future[List[A]] = ???
+  def findAll(readPreference: ReadPreference = ReadPreference.primaryPreferred, pageSize: Option[Int] = None, fromId: Option[ID] = None)
+             (implicit ec: ExecutionContext): Future[List[A]] = ???
 
   def findById(id: ID, readPreference: ReadPreference = ReadPreference.primaryPreferred)(implicit ec: ExecutionContext): Future[Option[A]] = ???
 
