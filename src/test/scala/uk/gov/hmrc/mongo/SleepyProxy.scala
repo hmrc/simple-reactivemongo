@@ -4,12 +4,12 @@ import java.net.InetSocketAddress
 import java.util.concurrent.{ Executors, ExecutorService }
 import java.util.concurrent.atomic.AtomicLong
 
-import org.jboss.netty.bootstrap.{ ClientBootstrap, ServerBootstrap }
-import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
-import org.jboss.netty.channel.Channels._
-import org.jboss.netty.channel._
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory
-import org.jboss.netty.channel.socket.nio.{ NioClientSocketChannelFactory, NioServerSocketChannelFactory }
+import shaded.netty.bootstrap.{ ClientBootstrap, ServerBootstrap }
+import shaded.netty.buffer.{ ChannelBuffers, ChannelBuffer }
+import shaded.netty.channel.Channels._
+import shaded.netty.channel._
+import shaded.netty.channel.socket.ClientSocketChannelFactory
+import shaded.netty.channel.socket.nio.{ NioClientSocketChannelFactory, NioServerSocketChannelFactory }
 
 case class SleepyProxyContext(
     sb: ServerBootstrap,

@@ -11,6 +11,7 @@ trait Geospatial[A, ID] {
   import play.api.libs.json.Json
   import reactivemongo.api.indexes.Index
   import reactivemongo.api.indexes.IndexType.Geo2DSpherical
+  import reactivemongo.play.json.ImplicitBSONHandlers._
 
   lazy val LocationField = "loc"
 

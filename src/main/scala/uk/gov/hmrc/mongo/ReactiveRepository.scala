@@ -1,15 +1,14 @@
 package uk.gov.hmrc.mongo
 
-import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import play.api.libs.json.{Format, JsObject, Json}
 import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{DB, ReadPreference}
 import reactivemongo.core.commands.Count
-import reactivemongo.core.errors.{GenericDatabaseException, DetailedDatabaseException, DatabaseException}
-import reactivemongo.json.ImplicitBSONHandlers
-import reactivemongo.json.collection.JSONCollection
+import reactivemongo.core.errors.GenericDatabaseException
+import reactivemongo.play.json.ImplicitBSONHandlers
+import reactivemongo.play.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,8 +19,9 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
                                                        mc: Option[JSONCollection] = None)
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
-  extends Repository[A, ID] with Indexes with ImplicitBSONHandlers {
+  extends Repository[A, ID] with Indexes {
 
+  import ImplicitBSONHandlers._
   import play.api.libs.json.Json.JsValueWrapper
 
   implicit val domainFormatImplicit = domainFormat
@@ -99,13 +99,11 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
     collection.indexesManager.create(index).map(wr => {
      if(!wr.ok) {
-       val maybeMsg = for {
-         msg <- wr.errmsg
-         m <- if (msg.contains(DuplicateKeyError)) {
+       val msg = wr.writeErrors.mkString(", ")
+       val maybeMsg = if (msg.contains(DuplicateKeyError)) {
            // this is for backwards compatibility to mongodb 2.6.x
            throw new GenericDatabaseException(msg, wr.code)
-         }else Some(msg)
-       } yield m
+         } else Some(msg)
        logger.error(s"$message : '${maybeMsg.map(_.toString)}'")
      }
      wr.ok

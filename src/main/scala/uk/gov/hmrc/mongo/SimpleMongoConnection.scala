@@ -19,7 +19,7 @@ trait SimpleMongoConnection {
 
   private def connect = helper.db
 
-  lazy val helper = MongoConnection.parseURI(mongoConnectionUri) match {
+  lazy val helper: ReactiveMongoHelper = MongoConnection.parseURI(mongoConnectionUri) match {
     case Success(MongoConnection.ParsedURI(hosts, options, ignoreOptions, Some(db), auth)) =>
       ReactiveMongoHelper(db, hosts.map(h => h._1 + ":" + h._2), auth.toList, failoverStrategy, options)
     case Success(MongoConnection.ParsedURI(_, _, _, None, _)) =>
