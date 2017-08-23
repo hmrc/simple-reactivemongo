@@ -18,10 +18,12 @@ import scala.concurrent.{ExecutionContext, Future}
 abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        mongo: () => DB,
                                                        domainFormat: Format[A],
-                                                       idFormat: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats,
+                                                       idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats,
                                                        mc: Option[JSONCollection] = None)
                                                       (implicit manifest: Manifest[A], mid: Manifest[ID])
-  extends Repository[A, ID] with Indexes with ImplicitBSONHandlers {
+  extends Repository[A, ID] with Indexes {
+
+  import ImplicitBSONHandlers._
 
   import play.api.libs.json.Json.JsValueWrapper
 
@@ -36,7 +38,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   ensureIndexes(scala.concurrent.ExecutionContext.Implicits.global)
 
   protected val _Id = "_id"
-  protected def _id(id : BSONObjectID) = Json.obj(_Id -> id.stringify)
+  protected def _id(id : ID) = Json.obj(_Id -> id)
 
   override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] = {
     collection.find(Json.obj(query: _*)).cursor[A](ReadPreference.primaryPreferred).collect[List]() //TODO: pass in ReadPreference

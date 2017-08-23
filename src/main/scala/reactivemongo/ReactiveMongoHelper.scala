@@ -17,8 +17,9 @@
 package reactivemongo
 
 import reactivemongo.core.nodeset.Authenticate
-import scala.concurrent.ExecutionContext
-import reactivemongo.api.{MongoConnectionOptions, FailoverStrategy, DB, MongoDriver}
+
+import scala.concurrent.{Await, ExecutionContext, Future}
+import reactivemongo.api._
 
 object ReactiveMongoHelper {
 
@@ -48,8 +49,9 @@ case class ReactiveMongoHelper(dbName: String,
     options = connectionOptions
   )
 
-  lazy val db = failoverStrategy match {
-    case Some(fs : FailoverStrategy) => DB(dbName, connection, fs)
-    case None => DB(dbName, connection)
+  import scala.concurrent.duration._
+  lazy val db: DefaultDB = failoverStrategy match {
+    case Some(fs : FailoverStrategy) => Await.result(connection.database(dbName, fs), 10 seconds)
+    case None => Await.result(connection.database(dbName), 10 seconds)
   }
 }
