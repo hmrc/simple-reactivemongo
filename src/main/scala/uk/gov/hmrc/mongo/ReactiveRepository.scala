@@ -1,14 +1,12 @@
 package uk.gov.hmrc.mongo
 
-import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import play.api.libs.json.{Format, JsObject, Json}
 import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{DB, ReadPreference}
-import reactivemongo.bson.BSONObjectID
 import reactivemongo.core.commands.Count
-import reactivemongo.core.errors.{DatabaseException, DetailedDatabaseException, GenericDatabaseException}
+import reactivemongo.core.errors.GenericDatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers
 import reactivemongo.play.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -24,7 +22,6 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   extends Repository[A, ID] with Indexes {
 
   import ImplicitBSONHandlers._
-
   import play.api.libs.json.Json.JsValueWrapper
 
   implicit val domainFormatImplicit = domainFormat
