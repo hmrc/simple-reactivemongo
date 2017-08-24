@@ -31,20 +31,16 @@ object HmrcBuild extends Build {
       scalaVersion := "2.11.7",
       libraryDependencies ++= appDependencies,
       resolvers += Resolver.typesafeRepo("releases"),
-      crossScalaVersions := Seq("2.11.7"),
-      version := "999"
+      crossScalaVersions := Seq("2.11.7")
     )
 }
 
 object Dependencies {
 
   object Compile {
-//    val reactiveMongoJson = "uk.gov.hmrc" %% "reactivemongo-json" % "3.2.0"
     val reactiveMongoJson = "org.reactivemongo" %% "reactivemongo-play-json" % "0.12.6-play25"
     //NOTE: 0.11.6 Netty 3.10.4.Final clashes with Play (2.3.10) version of Netty 3.9.8
 
-    // USING HMRC FORK OF REACTIVEMONGO - https://github.com/hmrc/ReactiveMongo
-//    val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.12.6"
     val reactiveMongo = "uk.gov.hmrc" %% "reactivemongo" % "0.14.0"
 
     val playJson = "com.typesafe.play" %% "play-json" % "2.5.12" % "provided"
