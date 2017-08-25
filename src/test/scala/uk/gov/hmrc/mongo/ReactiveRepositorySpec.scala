@@ -136,7 +136,10 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       await(repository.save(e1))
 
-      await(repository.removeById(e1.id)).inError shouldBe false
+      val removeResult = await(repository.removeById(e1.id))
+      val inError = !removeResult.ok || removeResult.code.isDefined
+
+      inError shouldBe false
 
       val result: Option[TestObject] = await(repository.findById(e1.id))
       result should be(None)
@@ -151,7 +154,9 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       await(repository.save(e1))
 
-      await(repository.remove("anotherField" -> "used to identify")).inError shouldBe false
+      val removeResult = await(repository.remove("anotherField" -> "used to identify"))
+      val inError = !removeResult.ok || removeResult.code.isDefined
+      inError shouldBe false
 
       val result: Option[TestObject] = await(repository.findById(e1.id))
       result should be(None)
@@ -165,7 +170,9 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
       await(repository.save(e1))
 
-      await(repository.remove("_id" -> e1.id, "anotherField" -> "used to identify")).inError shouldBe false
+      val removeResult = await(repository.remove("_id" -> e1.id, "anotherField" -> "used to identify"))
+      val inError = !removeResult.ok || removeResult.code.isDefined
+      inError shouldBe false
 
       val result: Option[TestObject] = await(repository.findById(e1.id))
       result should be(None)
@@ -233,7 +240,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
 
         await(uniqueIndexRepository.ensureIndexes) shouldBe Seq(false)
         logList.size should be(1)
-        logList.head.getMessage shouldBe (uniqueIndexRepository.message)
+        logList.head.getMessage contains uniqueIndexRepository.message
       }
     }
 

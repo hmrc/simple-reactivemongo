@@ -1,10 +1,10 @@
 package uk.gov.hmrc.mongo
 
-import play.api.libs.json.{Writes, Reads, JsSuccess, JsError, JsResultException}
+import play.api.libs.json.{Reads, JsSuccess, JsError, JsResultException}
 import reactivemongo.bson.{BSONObjectID, BSONDocument}
 import reactivemongo.core.commands.{LastError, Update, FindAndModify}
-import reactivemongo.json.ImplicitBSONHandlers.JsObjectReader
-import reactivemongo.json.collection.JSONCollection
+import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectReader
+import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
 

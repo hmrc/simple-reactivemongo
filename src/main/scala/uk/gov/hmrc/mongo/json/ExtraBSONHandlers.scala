@@ -10,7 +10,7 @@ trait ExtraBSONHandlers {
     new BSONDocumentReader[Map[String, T]] {
     def read(doc: BSONDocument): Map[String, T] = {
       doc.elements.collect {
-        case (key, value) => value.seeAsOpt[T](reader) map {
+        case BSONElement(key, value) => value.seeAsOpt[T](reader) map {
           ov => (key, ov)
         }
       }.flatten.toMap
