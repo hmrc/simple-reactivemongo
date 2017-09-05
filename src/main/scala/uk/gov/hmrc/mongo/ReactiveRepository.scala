@@ -14,13 +14,13 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import scala.concurrent.{ExecutionContext, Future}
 
 object ReactiveRepository {
-  def enrichWriteResult(w: WriteResult): WriteResult with WriteResultInError = w match {
+  def enrichWriteResult(w: WriteResult): WriteResult with WriteResultErrorFlag = w match {
     case DefaultWriteResult(ok, n, writeErrors, writeConcernError, code, errmsg) =>
-      new DefaultWriteResult(ok, n, writeErrors, writeConcernError, code, errmsg) with WriteResultInError
+      new DefaultWriteResult(ok, n, writeErrors, writeConcernError, code, errmsg) with WriteResultErrorFlag
     case UpdateWriteResult(ok, n, nModified, upserted, writeErrors, writeConcernError, code, errmsg) =>
-      new UpdateWriteResult(ok, n, nModified, upserted, writeErrors, writeConcernError, code, errmsg) with WriteResultInError
+      new UpdateWriteResult(ok, n, nModified, upserted, writeErrors, writeConcernError, code, errmsg) with WriteResultErrorFlag
     case LastError(ok, errmsg, code, lastOp, n, singleShard, updatedExisting, upserted, wnote, wtimeout, waited, wtime, writeErrors, writeConcernError) =>
-      new LastError(ok, errmsg, code, lastOp, n, singleShard, updatedExisting, upserted, wnote, wtimeout, waited, wtime, writeErrors, writeConcernError) with WriteResultInError
+      new LastError(ok, errmsg, code, lastOp, n, singleShard, updatedExisting, upserted, wnote, wtimeout, waited, wtime, writeErrors, writeConcernError) with WriteResultErrorFlag
   }
 }
 
@@ -82,11 +82,11 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   @deprecated("use ReactiveRepository#insert() instead", "3.0.1")
   override def save(entity: A)(implicit ec: ExecutionContext) = insert(entity)
 
-  override def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult with WriteResultInError] = {
+  override def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult with WriteResultErrorFlag] = {
     domainFormat.writes(entity) match {
         case d @ JsObject(_) => collection.insert(d).map(enrichWriteResult)
         case _ =>
-          Future.failed[WriteResult with WriteResultInError](new Exception("cannot write object"))
+          Future.failed[WriteResult with WriteResultErrorFlag](new Exception("cannot write object"))
       }
   }
 
