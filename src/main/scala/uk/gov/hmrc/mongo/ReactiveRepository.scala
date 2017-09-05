@@ -13,6 +13,17 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ExecutionContext, Future}
 
+object ReactiveRepository {
+  def enrichWriteResult(w: WriteResult): WriteResult with WriteResultErrorFlag = w match {
+    case DefaultWriteResult(ok, n, writeErrors, writeConcernError, code, errmsg) =>
+      new DefaultWriteResult(ok, n, writeErrors, writeConcernError, code, errmsg) with WriteResultErrorFlag
+    case UpdateWriteResult(ok, n, nModified, upserted, writeErrors, writeConcernError, code, errmsg) =>
+      new UpdateWriteResult(ok, n, nModified, upserted, writeErrors, writeConcernError, code, errmsg) with WriteResultErrorFlag
+    case LastError(ok, errmsg, code, lastOp, n, singleShard, updatedExisting, upserted, wnote, wtimeout, waited, wtime, writeErrors, writeConcernError) =>
+      new LastError(ok, errmsg, code, lastOp, n, singleShard, updatedExisting, upserted, wnote, wtimeout, waited, wtime, writeErrors, writeConcernError) with WriteResultErrorFlag
+  }
+}
+
 abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
                                                        mongo: () => DB,
                                                        domainFormat: Format[A],
@@ -23,6 +34,7 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
 
   import ImplicitBSONHandlers._
   import play.api.libs.json.Json.JsValueWrapper
+  import ReactiveRepository.enrichWriteResult
 
   implicit val domainFormatImplicit = domainFormat
   implicit val idFormatImplicit = idFormat
@@ -52,15 +64,15 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   override def count(implicit ec: ExecutionContext): Future[Int] = mongo().command(Count(collection.name))
 
   override def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext) = {
-    collection.remove(Json.obj(), writeConcern)
+    collection.remove(Json.obj(), writeConcern).map(enrichWriteResult)
   }
 
   override def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext) = {
-    collection.remove(_id(id), writeConcern)
+    collection.remove(_id(id), writeConcern).map(enrichWriteResult)
   }
 
   override def remove(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext) = {
-    collection.remove(Json.obj(query: _*), WriteConcern.Default) //TODO: pass in the WriteConcern
+    collection.remove(Json.obj(query: _*), WriteConcern.Default).map(enrichWriteResult) //TODO: pass in the WriteConcern
   }
 
   override def drop(implicit ec: ExecutionContext) = collection.drop.map(_ => true).recover[Boolean] {
@@ -70,11 +82,11 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](collectionName: String,
   @deprecated("use ReactiveRepository#insert() instead", "3.0.1")
   override def save(entity: A)(implicit ec: ExecutionContext) = insert(entity)
 
-  override def insert(entity: A)(implicit ec: ExecutionContext) = {
+  override def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult with WriteResultErrorFlag] = {
     domainFormat.writes(entity) match {
-        case d @ JsObject(_) => collection.insert(d)
+        case d @ JsObject(_) => collection.insert(d).map(enrichWriteResult)
         case _ =>
-          Future.failed[WriteResult](new Exception("cannot write object"))
+          Future.failed[WriteResult with WriteResultErrorFlag](new Exception("cannot write object"))
       }
   }
 
