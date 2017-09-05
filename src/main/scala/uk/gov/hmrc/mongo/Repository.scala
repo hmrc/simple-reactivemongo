@@ -28,6 +28,12 @@ trait CurrentTime {
   def withCurrentTime[A](f: (DateTime) => A) = f(DateTime.now.withZone(zone))
 }
 
+trait WriteResultInError {
+  self: WriteResult =>
+
+  override def inError: Boolean = !ok || code.isDefined
+}
+
 
 trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
@@ -41,17 +47,17 @@ trait Repository[A <: Any, ID <: Any] extends CurrentTime {
 
   def count(implicit ec: ExecutionContext): Future[Int] = ???
 
-  def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext): Future[WriteResult] = ???
+  def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext): Future[WriteResult with WriteResultInError] = ???
 
-  def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext): Future[WriteResult] = ???
+  def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext): Future[WriteResult with WriteResultInError] = ???
 
-  def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[WriteResult] = ???
+  def remove(query: (scala.Predef.String, play.api.libs.json.Json.JsValueWrapper)*)(implicit ec: ExecutionContext): Future[WriteResult with WriteResultInError] = ???
 
   def drop(implicit ec: ExecutionContext): Future[Boolean] = ???
 
-  def save(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] = ???
+  def save(entity: A)(implicit ec: ExecutionContext): Future[WriteResult with WriteResultInError] = ???
 
-  def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] = ???
+  def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult with WriteResultInError] = ???
 
   def bulkInsert(entities: Seq[A])(implicit ec: ExecutionContext): Future[MultiBulkWriteResult]
 
