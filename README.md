@@ -29,7 +29,7 @@ import reactivemongo.play.json.ImplicitBSONHandlers._
 #### WriteResult is no longer an Exception
 
 The type hierarchy of the trait `WriteResult` has changed in new version of reactivemongo. 
-It’s no longer an Exception. As it now longer represents errors in the public API, the following properties have been removed: `errmsg`, `hasErrors`, `inError` and `message`.
+It’s no longer an Exception. As it no longer represents errors in the public API, the following properties have been removed: `errmsg`, `hasErrors`, `inError` and `message`.
 
 simple-reactivemongo previously exposed `inError`, something that is no longer possible.
 
