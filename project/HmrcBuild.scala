@@ -41,7 +41,7 @@ object Dependencies {
     val reactiveMongoJson = "org.reactivemongo" %% "reactivemongo-play-json" % "0.12.6-play25"
     //NOTE: 0.11.6 Netty 3.10.4.Final clashes with Play (2.3.10) version of Netty 3.9.8
 
-    val reactiveMongo = "uk.gov.hmrc" %% "reactivemongo" % "0.14.0"
+    val reactiveMongo = "uk.gov.hmrc" %% "reactivemongo" % "0.15.1"
 
     val playJson = "com.typesafe.play" %% "play-json" % "2.5.12" % "provided"
     val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "2.2.0"
