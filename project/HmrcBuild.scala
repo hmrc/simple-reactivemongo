@@ -38,7 +38,7 @@ object HmrcBuild extends Build {
 object Dependencies {
 
   object Compile {
-    val reactiveMongoJson = "org.reactivemongo" %% "reactivemongo-play-json" % "0.12.6-play25"
+    val reactiveMongoJson = "org.reactivemongo" %% "reactivemongo-play-json" % "0.12.7-play25"
     //NOTE: 0.11.6 Netty 3.10.4.Final clashes with Play (2.3.10) version of Netty 3.9.8
 
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.12.7"
