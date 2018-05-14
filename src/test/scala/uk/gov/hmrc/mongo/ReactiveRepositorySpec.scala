@@ -9,7 +9,6 @@ import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.slf4j.LoggerFactory
 import play.api.libs.json.{JsValue, Json}
-import reactivemongo.api.commands.CommandError
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.core.errors.DatabaseException
@@ -197,7 +196,7 @@ class ReactiveRepositorySpec extends WordSpec with Matchers with MongoSpecSuppor
   "Creation of Indexes" should {
     "should be done based on provided Indexes" in new LogCapturing {
       await(repository.drop)
-      await(repository.collection.indexesManager.list().failed) shouldBe a[CommandError]
+      await(repository.collection.indexesManager.list()) shouldBe empty
 
       await(repository.ensureIndexes)
       await(repository.save(TestObject("random_object")))
