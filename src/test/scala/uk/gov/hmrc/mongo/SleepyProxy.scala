@@ -1,21 +1,21 @@
 package uk.gov.hmrc.mongo
 
 import java.net.InetSocketAddress
-import java.util.concurrent.{ Executors, ExecutorService }
+import java.util.concurrent.{ExecutorService, Executors}
 import java.util.concurrent.atomic.AtomicLong
 
-import shaded.netty.bootstrap.{ ClientBootstrap, ServerBootstrap }
-import shaded.netty.buffer.{ ChannelBuffers, ChannelBuffer }
+import shaded.netty.bootstrap.{ClientBootstrap, ServerBootstrap}
+import shaded.netty.buffer.{ChannelBuffer, ChannelBuffers}
 import shaded.netty.channel.Channels._
 import shaded.netty.channel._
 import shaded.netty.channel.socket.ClientSocketChannelFactory
-import shaded.netty.channel.socket.nio.{ NioClientSocketChannelFactory, NioServerSocketChannelFactory }
+import shaded.netty.channel.socket.nio.{NioClientSocketChannelFactory, NioServerSocketChannelFactory}
 
 case class SleepyProxyContext(
-    sb: ServerBootstrap,
-    cf: ClientSocketChannelFactory,
-    executor: ExecutorService,
-    sleepTime: AtomicLong) {
+  sb: ServerBootstrap,
+  cf: ClientSocketChannelFactory,
+  executor: ExecutorService,
+  sleepTime: AtomicLong) {
 
   def setSleepTime(sleepTime: Int) {
     this.sleepTime.getAndSet(sleepTime)
@@ -32,8 +32,8 @@ object SleepyProxy {
   private val sleepTime: AtomicLong = new AtomicLong(0)
 
   def start(localPort: Int, remotePort: Int, remoteHost: String): SleepyProxyContext = {
-    val executor: ExecutorService = Executors.newCachedThreadPool
-    val sb: ServerBootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(executor, executor))
+    val executor: ExecutorService      = Executors.newCachedThreadPool
+    val sb: ServerBootstrap            = new ServerBootstrap(new NioServerSocketChannelFactory(executor, executor))
     val cf: ClientSocketChannelFactory = new NioClientSocketChannelFactory(executor, executor)
 
     val pipelineFactory: ChannelPipelineFactory = new ChannelPipelineFactory() {
@@ -56,7 +56,12 @@ object SleepyProxy {
   }
 }
 
-class SleepyProxyInboundHandler(cf: ClientSocketChannelFactory, remoteHost: String, remotePort: Int, sleepTime: AtomicLong) extends SimpleChannelUpstreamHandler {
+class SleepyProxyInboundHandler(
+  cf: ClientSocketChannelFactory,
+  remoteHost: String,
+  remotePort: Int,
+  sleepTime: AtomicLong)
+    extends SimpleChannelUpstreamHandler {
   @volatile
   private var outboundChannel: Channel = null
 
@@ -129,8 +134,8 @@ class SleepyProxyInboundHandler(cf: ClientSocketChannelFactory, remoteHost: Stri
   }
 
   /**
-   * Closes the specified channel after all queued write requests are flushed.
-   */
+    * Closes the specified channel after all queued write requests are flushed.
+    */
   private def closeOnFlush(ch: Channel) {
     if (ch.isConnected) {
       ch.write(ChannelBuffers.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE)

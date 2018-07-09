@@ -6,7 +6,13 @@ import reactivemongo.core.errors.GenericDriverException
 
 import scala.concurrent.{Await, Future}
 
-class MongoConnectorTimeoutSpec extends WordSpec with Matchers with MongoSpecSupport with ScalaFutures with Awaiting with BeforeAndAfterEach{
+class MongoConnectorTimeoutSpec
+    extends WordSpec
+    with Matchers
+    with MongoSpecSupport
+    with ScalaFutures
+    with Awaiting
+    with BeforeAndAfterEach {
 
   private lazy val ProxyPort = 1999
 

@@ -24,34 +24,40 @@ import reactivemongo.api._
 object ReactiveMongoHelper {
 
   @deprecated(message = "use case class constructor that takes MongoConnectionOptions")
-  def apply(dbName: String,
-            servers: Seq[String],
-            auth: Seq[Authenticate],
-            nbChannelsPerNode: Option[Int],
-            failoverStrategy: Option[FailoverStrategy]):ReactiveMongoHelper = {
-    val mongoOpts = nbChannelsPerNode.map { n => MongoConnectionOptions().copy(nbChannelsPerNode = n) }.getOrElse(MongoConnectionOptions())
+  def apply(
+    dbName: String,
+    servers: Seq[String],
+    auth: Seq[Authenticate],
+    nbChannelsPerNode: Option[Int],
+    failoverStrategy: Option[FailoverStrategy]): ReactiveMongoHelper = {
+    val mongoOpts = nbChannelsPerNode
+      .map { n =>
+        MongoConnectionOptions().copy(nbChannelsPerNode = n)
+      }
+      .getOrElse(MongoConnectionOptions())
     this(dbName, servers, auth, failoverStrategy, mongoOpts)
   }
 }
 
-case class ReactiveMongoHelper(dbName: String,
-                               servers: Seq[String],
-                               auth: Seq[Authenticate],
-                               failoverStrategy: Option[FailoverStrategy],
-                               connectionOptions: MongoConnectionOptions = MongoConnectionOptions()) {
+case class ReactiveMongoHelper(
+  dbName: String,
+  servers: Seq[String],
+  auth: Seq[Authenticate],
+  failoverStrategy: Option[FailoverStrategy],
+  connectionOptions: MongoConnectionOptions = MongoConnectionOptions()) {
 
   implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
-  lazy val driver = new MongoDriver
+  lazy val driver                   = new MongoDriver
 
   lazy val connection = driver.connection(
     servers,
     authentications = auth,
-    options = connectionOptions
+    options         = connectionOptions
   )
 
   import scala.concurrent.duration._
   lazy val db: DefaultDB = failoverStrategy match {
-    case Some(fs : FailoverStrategy) => Await.result(connection.database(dbName, fs), 10 seconds)
-    case None => Await.result(connection.database(dbName), 10 seconds)
+    case Some(fs: FailoverStrategy) => Await.result(connection.database(dbName, fs), 10 seconds)
+    case None                       => Await.result(connection.database(dbName), 10 seconds)
   }
 }

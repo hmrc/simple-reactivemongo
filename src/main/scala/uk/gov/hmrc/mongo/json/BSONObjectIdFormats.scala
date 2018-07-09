@@ -7,8 +7,8 @@ object BSONObjectIdFormats extends BSONObjectIdFormats
 
 trait BSONObjectIdFormats {
 
-  implicit val objectIdRead: Reads[BSONObjectID] = __.read[String].map {
-    oid => BSONObjectID(oid)
+  implicit val objectIdRead: Reads[BSONObjectID] = __.read[String].map { oid =>
+    BSONObjectID(oid)
   }
 
   implicit val objectIdWrite: Writes[BSONObjectID] = new Writes[BSONObjectID] {

@@ -18,7 +18,6 @@ object HmrcBuild extends Build {
       Compile.playJson,
       Compile.nscalaTime,
       Compile.logback,
-
       Test.scalaTest,
       Test.pegdown
     )
@@ -43,15 +42,15 @@ object Dependencies {
 
     val reactiveMongo = "uk.gov.hmrc" %% "reactivemongo" % "0.15.1"
 
-    val playJson = "com.typesafe.play" %% "play-json" % "2.5.12" % "provided"
-    val nscalaTime = "com.github.nscala-time" %% "nscala-time" % "2.2.0"
-    val logback = "ch.qos.logback" % "logback-classic" % "1.1.2"
+    val playJson   = "com.typesafe.play"      %% "play-json"      % "2.5.12" % "provided"
+    val nscalaTime = "com.github.nscala-time" %% "nscala-time"    % "2.2.0"
+    val logback    = "ch.qos.logback"         % "logback-classic" % "1.1.2"
   }
 
   sealed abstract class Test(scope: String) {
 
     val scalaTest = "org.scalatest" %% "scalatest" % "2.2.4" % scope
-    val pegdown = "org.pegdown" % "pegdown" % "1.5.0" % scope
+    val pegdown   = "org.pegdown"   % "pegdown"    % "1.5.0" % scope
   }
 
   object Test extends Test("test")
@@ -60,11 +59,10 @@ object Dependencies {
 
 }
 
-
 object BuildDescriptionSettings {
 
   def apply() = Seq(
-      pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
+    pomExtra := (<url>https://www.gov.uk/government/organisations/hm-revenue-customs</url>
         <licenses>
           <license>
             <name>Apache 2</name>
@@ -93,6 +91,5 @@ object BuildDescriptionSettings {
             <url>http://www.equalexperts.com</url>
           </developer>
         </developers>)
-    )
+  )
 }
-

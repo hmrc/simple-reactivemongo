@@ -17,19 +17,21 @@ trait MongoSpecSupport {
 
   implicit val mongo = mongoConnectorForTest.db
 
-  def bsonCollection(name: String)(failoverStrategy: FailoverStrategy = mongoConnectorForTest.helper.db.failoverStrategy): BSONCollection = {
+  def bsonCollection(name: String)(
+    failoverStrategy: FailoverStrategy = mongoConnectorForTest.helper.db.failoverStrategy): BSONCollection = {
     import reactivemongo.api._
     mongoConnectorForTest.helper.db(name, failoverStrategy)
   }
 
-  def lastError(successful: Boolean, updated: Boolean = false, originalDoc: Option[BSONDocument] = None) = LastError(
-    ok = successful,
-    err = None,
-    code = None,
-    errMsg = None,
-    originalDocument = originalDoc,
-    updated = if (updated) 1 else 0,
-    updatedExisting = updated)
+  def lastError(successful: Boolean, updated: Boolean = false, originalDoc: Option[BSONDocument] = None) =
+    LastError(
+      ok               = successful,
+      err              = None,
+      code             = None,
+      errMsg           = None,
+      originalDocument = originalDoc,
+      updated          = if (updated) 1 else 0,
+      updatedExisting  = updated)
 
 }
 

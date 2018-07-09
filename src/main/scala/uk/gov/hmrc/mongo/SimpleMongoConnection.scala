@@ -4,7 +4,7 @@ import reactivemongo.api.FailoverStrategy
 
 trait SimpleMongoConnection {
 
-  import reactivemongo.api.{MongoConnection, DefaultDB}
+  import reactivemongo.api.{DefaultDB, MongoConnection}
   import scala.util.{Failure, Success}
   import scala.concurrent.Await
   import scala.concurrent.duration._
@@ -34,4 +34,5 @@ trait SimpleMongoConnection {
 
 }
 
-case class MongoConnector(mongoConnectionUri: String, failoverStrategy : Option[FailoverStrategy] = None) extends SimpleMongoConnection
+case class MongoConnector(mongoConnectionUri: String, failoverStrategy: Option[FailoverStrategy] = None)
+    extends SimpleMongoConnection
