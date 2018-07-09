@@ -44,8 +44,8 @@ trait SimpleMongoConnection {
   }
 
   def close() {
-    val f = helper.connection.askClose()(10 seconds)
-    Await.ready(f, 10 seconds)
+    val f = helper.connection.askClose()(10.seconds)
+    Await.ready(f, 10.seconds)
   }
 
 }

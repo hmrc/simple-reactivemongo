@@ -18,10 +18,10 @@ package uk.gov.hmrc.mongo
 
 import reactivemongo.api.collections.bson.BSONCollection
 import reactivemongo.bson.BSONDocument
-import reactivemongo.core.commands.LastError
 
 import scala.concurrent.duration._
 import reactivemongo.api.FailoverStrategy
+import reactivemongo.api.commands.LastError
 
 trait MongoSpecSupport {
 
@@ -41,13 +41,21 @@ trait MongoSpecSupport {
 
   def lastError(successful: Boolean, updated: Boolean = false, originalDoc: Option[BSONDocument] = None) =
     LastError(
-      ok               = successful,
-      err              = None,
-      code             = None,
-      errMsg           = None,
-      originalDocument = originalDoc,
-      updated          = if (updated) 1 else 0,
-      updatedExisting  = updated)
+      ok                = successful,
+      errmsg            = None,
+      code              = None,
+      lastOp            = None,
+      n                 = if (updated) 1 else 0,
+      singleShard       = None,
+      updatedExisting   = updated,
+      upserted          = None,
+      wnote             = None,
+      wtimeout          = false,
+      waited            = None,
+      wtime             = None,
+      writeErrors       = Nil,
+      writeConcernError = None
+    )
 
 }
 

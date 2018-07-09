@@ -234,10 +234,8 @@ class ReactiveRepositorySpec
   }
 
   "Creation of Indexes" should {
-    "should be done based on provided Indexes" in new LogCapturing {
+    "be done based on provided Indexes" in new LogCapturing {
       await(repository.drop)
-      await(repository.collection.indexesManager.list()) shouldBe empty
-
       await(repository.ensureIndexes)
       await(repository.save(TestObject("random_object")))
 

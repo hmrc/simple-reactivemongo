@@ -19,7 +19,6 @@ package uk.gov.hmrc.mongo
 import org.joda.time.{DateTime, DateTimeZone}
 import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
-import reactivemongo.core.commands.LastError
 
 import scala.concurrent.{ExecutionContext, Future}
 

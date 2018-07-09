@@ -19,11 +19,12 @@ package uk.gov.hmrc.mongo
 import org.slf4j.LoggerFactory
 import play.api.libs.json.{Format, JsObject, Json}
 import reactivemongo.api.commands._
+import reactivemongo.api.commands.bson.BSONCountCommandImplicits._
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{DB, ReadPreference}
-import reactivemongo.core.commands.Count
 import reactivemongo.core.errors.GenericDatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers
+import reactivemongo.play.json.collection.JSONBatchCommands.JSONCountCommand._
 import reactivemongo.play.json.collection.JSONCollection
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -68,7 +69,8 @@ abstract class ReactiveRepository[A <: Any, ID <: Any](
     implicit ec: ExecutionContext): Future[Option[A]] =
     collection.find(_id(id)).one[A](readPreference)
 
-  override def count(implicit ec: ExecutionContext): Future[Int] = mongo().command(Count(collection.name))
+  override def count(implicit ec: ExecutionContext): Future[Int] =
+    collection.runCommand(Count(ImplicitlyDocumentProducer.producer(Json.obj()))).map(_.count)
 
   override def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext) =
     collection.remove(Json.obj(), writeConcern)

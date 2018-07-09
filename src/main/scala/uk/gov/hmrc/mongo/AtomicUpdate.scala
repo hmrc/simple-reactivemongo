@@ -17,8 +17,13 @@
 package uk.gov.hmrc.mongo
 
 import play.api.libs.json.{JsError, JsResultException, JsSuccess, Reads}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.core.commands.{FindAndModify, LastError, Update}
+import reactivemongo.api.commands.bson.BSONFindAndModifyCommand
+import reactivemongo.api.commands.{LastError, ResolvedCollectionCommand}
+import reactivemongo.api.{BSONSerializationPack, FailoverStrategy}
+import reactivemongo.bson.{BSONDocument, BSONDocumentWriter, BSONObjectID}
+//import reactivemongo.core.commands.{LastError, Update}
+import reactivemongo.api.commands.bson.BSONFindAndModifyCommand._
+import reactivemongo.api.commands.bson.BSONFindAndModifyImplicits._
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectReader
 import reactivemongo.play.json.collection.JSONCollection
 
@@ -86,17 +91,22 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
     } else (modifierBson, None)
 
     val command = FindAndModify(
-      collection.name,
-      finder,
-      Update(updateCommand, fetchNewObject = true),
-      upsert = upsert,
+      query  = finder,
+      modify = Update(updateCommand, fetchNewObject = true, upsert),
       sort   = None,
-      fields = None)
+      fields = None
+    )
+
+    val failoverStrategy = FailoverStrategy() // todo (konrad) review this
+
+    val runner = reactivemongo.api.commands.Command.run(BSONSerializationPack, failoverStrategy)
+
+    implicit val writer: BSONDocumentWriter[ResolvedCollectionCommand[FindAndModify]] =
+      BSONSerializationPack.writer[ResolvedCollectionCommand[FindAndModify]] { BSONFindAndModifyCommand.serialize(_) }
 
     for {
-      maybeUpdated <- collection.db.command(command)
-
-      saveOrUpdateResult <- maybeUpdated match {
+      updateResult <- runner.apply(collection, command)
+      saveOrUpdateResult <- updateResult.value match {
                              case Some(update) => toDbUpdate(update, insertDocumentId).map(Some(_))
                              case None         => Future.successful(None)
                            }
@@ -104,14 +114,22 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
   }
 
   private def le(updatedExisting: Boolean) =
-    new LastError(
-      ok               = true,
-      err              = None,
-      code             = None,
-      errMsg           = None,
-      originalDocument = None,
-      updated          = 1,
-      updatedExisting  = updatedExisting)
+    LastError(
+      ok                = true,
+      errmsg            = None,
+      code              = None,
+      lastOp            = None,
+      n                 = 1,
+      singleShard       = None,
+      updatedExisting   = updatedExisting,
+      upserted          = None,
+      wnote             = None,
+      wtimeout          = false,
+      waited            = None,
+      wtime             = None,
+      writeErrors       = Nil,
+      writeConcernError = None
+    )
 
   private def toDbUpdate(s: BSONDocument, insertedId: Option[BSONObjectID])(
     implicit reads: Reads[T]): Future[DatabaseUpdate[T]] = {
