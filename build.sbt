@@ -3,7 +3,7 @@ import PlayCrossCompilation._
 val libName = "simple-reactivemongo"
 
 lazy val simpleReactiveMongo = Project(libName, file("."))
-  .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
+  .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
   .settings(
     makePublicallyAvailableOnBintray := true,
     majorVersion                     := 6

@@ -21,9 +21,11 @@ import reactivemongo.core.nodeset.Authenticate
 import scala.concurrent.{Await, ExecutionContext, Future}
 import reactivemongo.api._
 
+import scala.language.postfixOps
+
 object ReactiveMongoHelper {
 
-  @deprecated(message = "use case class constructor that takes MongoConnectionOptions")
+  @deprecated(message = "use case class constructor that takes MongoConnectionOptions", "0.1.0")
   def apply(
     dbName: String,
     servers: Seq[String],
@@ -49,7 +51,7 @@ case class ReactiveMongoHelper(
   implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
   lazy val driver                   = new MongoDriver
 
-  lazy val connection = driver.connection(
+  lazy val connection: MongoConnection = driver.connection(
     servers,
     authentications = auth,
     options         = connectionOptions

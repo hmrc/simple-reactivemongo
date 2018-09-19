@@ -15,15 +15,33 @@
  */
 
 package uk.gov.hmrc.mongo.json
+import org.scalacheck.Gen
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatest.{Matchers, OptionValues, WordSpec}
+import play.api.libs.json.{JsNumber, JsString, Json}
+import reactivemongo.bson.BSONObjectID
 
-import org.scalatest.{Matchers, WordSpec}
-import play.api.libs.json.{JsNumber, JsString, JsUndefined, Json}
-
-class ReactiveMongoFormatsSpec extends WordSpec with Matchers {
+class ReactiveMongoFormatsSpec extends WordSpec with Matchers with GeneratorDrivenPropertyChecks with OptionValues {
 
   case class Foo(id: String, name: String, _age: Int)
 
+  val idGen: Gen[BSONObjectID] = Gen.numChar.map(_ => reactivemongo.bson.BSONObjectID.generate())
+
   "mongoEntity" should {
+
+    "serialize and deserialize a BSONObjectId to JSON" in {
+      import ReactiveMongoFormats._
+
+      forAll(idGen) { id =>
+        val serialized = Json.toJson(id)
+        serialized shouldBe Json.obj("$oid" -> id.stringify)
+
+        val deserialized = serialized.validate[BSONObjectID]
+        deserialized.isSuccess shouldBe true
+        deserialized.get       shouldBe id
+      }
+
+    }
 
     "replace _id with id when reading json" in {
 
@@ -43,9 +61,6 @@ class ReactiveMongoFormatsSpec extends WordSpec with Matchers {
       (json \ "name").get    shouldBe JsString("name")
       (json \ "_age").get    shouldBe JsNumber(22)
       (json \ "id").toOption shouldBe None
-
     }
-
   }
-
 }
