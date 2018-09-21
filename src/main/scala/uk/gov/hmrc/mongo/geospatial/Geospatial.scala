@@ -25,11 +25,12 @@ import scala.concurrent.Future
 trait Geospatial[A, ID] {
   self: ReactiveRepository[A, ID] =>
 
-  import scala.concurrent.ExecutionContext
   import play.api.libs.json.Json
   import reactivemongo.api.indexes.Index
   import reactivemongo.api.indexes.IndexType.Geo2DSpherical
   import reactivemongo.play.json.ImplicitBSONHandlers._
+
+  import scala.concurrent.ExecutionContext
 
   lazy val LocationField = "loc"
 
