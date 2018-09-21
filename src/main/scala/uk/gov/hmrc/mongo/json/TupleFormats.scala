@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.mongo.json
 
+import reactivemongo.play.json.ValidationError
+
 /**
   * Thanks goes to Alexander Jarvis for his Gist (https://gist.github.com/alexanderjarvis/4595298)
   */
@@ -29,7 +31,7 @@ trait TupleFormats {
           a <- aReads.reads(arr(0))
           b <- bReads.reads(arr(1))
         } yield c(a, b)
-      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("Expected array of two elements"))))
+      case _ => JsError(Seq(JsPath() -> Seq(ValidationError(Seq("Expected array of two elements"), Nil))))
     }
 
   implicit def tuple2Writes[T1, T2](implicit aWrites: Writes[T1], bWrites: Writes[T2]): Writes[(T1, T2)] =
