@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.mongo.json
 
-import play.api.libs.json._
 import org.joda.time.{DateTime, DateTimeZone, LocalDate, LocalDateTime}
+import play.api.libs.json._
 import reactivemongo.bson.BSONObjectID
 
-object ReactiveMongoFormats extends ReactiveMongoFormats
+import scala.util.{Failure, Success}
 
 trait ReactiveMongoFormats {
 
@@ -57,10 +57,14 @@ trait ReactiveMongoFormats {
     )
   }
 
-  implicit val objectIdRead: Reads[BSONObjectID] =
-    (__ \ "$oid").read[String].map { oid =>
-      BSONObjectID(oid)
+  implicit val objectIdRead: Reads[BSONObjectID] = Reads[BSONObjectID] { json =>
+    (json \ "$oid").validate[String].flatMap { str =>
+      BSONObjectID.parse(str) match {
+        case Success(bsonId) => JsSuccess(bsonId)
+        case Failure(err)    => JsError(__, s"Invalid BSON Object ID $json; ${err.getMessage}")
+      }
     }
+  }
 
   implicit val objectIdWrite: Writes[BSONObjectID] = new Writes[BSONObjectID] {
     def writes(objectId: BSONObjectID): JsValue = Json.obj(
@@ -84,3 +88,5 @@ trait ReactiveMongoFormats {
     }
   }
 }
+
+object ReactiveMongoFormats extends ReactiveMongoFormats
