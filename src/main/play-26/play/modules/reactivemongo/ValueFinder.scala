@@ -16,14 +16,8 @@
 
 package play.modules.reactivemongo
 
-import uk.gov.hmrc.mongo.MongoConnector
-import play.api.Play
-import reactivemongo.api.DefaultDB
+import play.api.Configuration
 
-@deprecated("Static reference to running play app. Use injection instead.", "0.1.0")
-trait MongoDbConnection {
-
-  lazy val mongoConnector: MongoConnector = Play.current.injector.instanceOf[ReactiveMongoComponent].mongoConnector
-
-  implicit val db: () => DefaultDB = mongoConnector.db
+private trait ValueFinder[T] {
+  def getOptional(config: Configuration, key: String): Option[T]
 }
