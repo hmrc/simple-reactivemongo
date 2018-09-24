@@ -34,11 +34,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
 
 abstract class ReactiveRepository[A, ID](
-  collectionName: String,
-  mongo: () => DB,
+  protected[mongo] val collectionName: String,
+  protected[mongo] val mongo: () => DB,
   domainFormat: Format[A],
   idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats)
     extends Indexes
+    with MongoDb
+    with CollectionName
     with CurrentTime {
 
   import ImplicitBSONHandlers._
@@ -154,14 +156,13 @@ abstract class ReactiveRepository[A, ID](
 
   class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
 
-  private val DuplicateKeyError = "E11000"
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] =
     collection.indexesManager
       .create(index)
       .map(wr => {
         if (!wr.ok) {
           val msg = wr.writeErrors.mkString(", ")
-          val maybeMsg = if (msg.contains(DuplicateKeyError)) {
+          val maybeMsg = if (msg.contains("E11000")) {
             // this is for backwards compatibility to mongodb 2.6.x
             throw GenericDatabaseException(msg, wr.code)
           } else Some(msg)

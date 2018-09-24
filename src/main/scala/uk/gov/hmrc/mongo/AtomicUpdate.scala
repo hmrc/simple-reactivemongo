@@ -17,22 +17,31 @@
 package uk.gov.hmrc.mongo
 
 import play.api.libs.json.{JsError, JsResultException, JsSuccess, Reads}
-import reactivemongo.api.commands.bson.BSONFindAndModifyCommand
+import reactivemongo.api.DB
+import reactivemongo.api.collections.bson.BSONCollection
+import reactivemongo.api.commands.LastError
 import reactivemongo.api.commands.bson.BSONFindAndModifyCommand._
-import reactivemongo.api.commands.bson.BSONFindAndModifyImplicits._
-import reactivemongo.api.commands.{GetLastError, LastError, ResolvedCollectionCommand}
-import reactivemongo.api.{BSONSerializationPack, FailoverStrategy, ReadPreference}
-import reactivemongo.bson.{BSONDocument, BSONDocumentWriter, BSONObjectID}
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectReader
-import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
+@deprecated("Will be removed when AtomicUpdate trait is removed", "7.0.0")
+trait MongoDb {
+  protected[mongo] def mongo: () => DB
+}
+
+@deprecated("Will be removed when AtomicUpdate trait is removed", "7.0.0")
+trait CollectionName {
+  protected[mongo] def collectionName: String
+}
+
+@deprecated("Please use findAndUpdate method from ReactiveRepository instead", "7.0.0")
+trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers with MongoDb with CollectionName {
 
   def isInsertion(newRecordId: BSONObjectID, oldRecord: T): Boolean
 
-  def collection: JSONCollection
+  private lazy val bsonCollection: BSONCollection = mongo().collection[BSONCollection](collectionName)
 
   /**
     *
@@ -41,6 +50,7 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
     * @param idAttributeName Optional value to override the default object Id for the collection. Atomics MUST have a record Id to store
     *                        a BSONObjectId in order to understand if the update is an upsert or update.
     */
+  @deprecated("Please use findAndUpdate method from ReactiveRepository instead", "7.0.0")
   def atomicUpsert(finder: BSONDocument, modifierBson: BSONDocument, idAttributeName: String = "_id")(
     implicit ec: ExecutionContext,
     reads: Reads[T]): Future[DatabaseUpdate[T]] =
@@ -54,6 +64,7 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
     * @param idAttributeName Optional value to override the default object Id for the collection. Atomics MUST have a record Id to store
     *                        a BSONObjectId in order to understand if the update is an upsert or update.
     */
+  @deprecated("Please use findAndUpdate method from ReactiveRepository instead", "7.0.0")
   def atomicUpdate(finder: BSONDocument, modifierBson: BSONDocument, idAttributeName: String = "_id")(
     implicit ec: ExecutionContext,
     reads: Reads[T]): Future[Option[DatabaseUpdate[T]]] =
@@ -79,25 +90,11 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
       (modifierBson ++ createIdOnInsertOnly(insertedId, idAttributeName), Some(insertedId))
     } else (modifierBson, None)
 
-    val command = FindAndModify(
-      query                    = finder,
-      modify                   = Update(updateCommand, fetchNewObject = true, upsert),
-      sort                     = None,
-      fields                   = None,
-      bypassDocumentValidation = false,
-      writeConcern             = GetLastError.Default,
-      maxTimeMS                = Option.empty,
-      collation                = Option.empty,
-      arrayFilters             = Seq.empty
-    )
-
-    val runner = reactivemongo.api.commands.Command.run(BSONSerializationPack, FailoverStrategy())
-
-    implicit val writer: BSONDocumentWriter[ResolvedCollectionCommand[FindAndModify]] =
-      BSONSerializationPack.writer[ResolvedCollectionCommand[FindAndModify]] { BSONFindAndModifyCommand.serialize }
-
     for {
-      updateResult <- runner(collection, command, ReadPreference.primary)
+      updateResult <- bsonCollection.findAndModify(
+                       selector = finder,
+                       modifier = Update(updateCommand, fetchNewObject = true, upsert)
+                     )
       saveOrUpdateResult <- updateResult.value match {
                              case Some(update) => toDbUpdate(update, insertDocumentId).map(Some(_))
                              case None         => Future.successful(None)
