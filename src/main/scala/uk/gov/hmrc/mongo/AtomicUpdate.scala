@@ -17,8 +17,12 @@
 package uk.gov.hmrc.mongo
 
 import play.api.libs.json.{JsError, JsResultException, JsSuccess, Reads}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.core.commands.{FindAndModify, LastError, Update}
+import reactivemongo.api.commands.bson.BSONFindAndModifyCommand
+import reactivemongo.api.commands.bson.BSONFindAndModifyCommand._
+import reactivemongo.api.commands.bson.BSONFindAndModifyImplicits._
+import reactivemongo.api.commands.{GetLastError, LastError, ResolvedCollectionCommand}
+import reactivemongo.api.{BSONSerializationPack, FailoverStrategy, ReadPreference}
+import reactivemongo.bson.{BSONDocument, BSONDocumentWriter, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectReader
 import reactivemongo.play.json.collection.JSONCollection
 
@@ -36,9 +40,6 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
     * @param modifierBson    The modifier to be applied
     * @param idAttributeName Optional value to override the default object Id for the collection. Atomics MUST have a record Id to store
     *                        a BSONObjectId in order to understand if the update is an upsert or update.
-    * @param ec
-    * @param reads
-    * @return
     */
   def atomicUpsert(finder: BSONDocument, modifierBson: BSONDocument, idAttributeName: String = "_id")(
     implicit ec: ExecutionContext,
@@ -52,9 +53,6 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
     * @param modifierBson    The modifier to be applied
     * @param idAttributeName Optional value to override the default object Id for the collection. Atomics MUST have a record Id to store
     *                        a BSONObjectId in order to understand if the update is an upsert or update.
-    * @param ec
-    * @param reads
-    * @return
     */
   def atomicUpdate(finder: BSONDocument, modifierBson: BSONDocument, idAttributeName: String = "_id")(
     implicit ec: ExecutionContext,
@@ -65,12 +63,8 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
     *
     * @param finder          The finder to find an existing record.
     * @param modifierBson    The modifier to be applied
-    * @param upsert
     * @param idAttributeName Optional value to override the default object Id for the collection. Atomics MUST have a record Id to store
     *                        a BSONObjectId in order to understand if the update is an upsert or update.
-    * @param ec
-    * @param reads
-    * @return
     */
   @deprecated("use atomicUpsert or atomicUpdate instead", "4.3.0")
   def atomicSaveOrUpdate(
@@ -86,17 +80,25 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
     } else (modifierBson, None)
 
     val command = FindAndModify(
-      collection.name,
-      finder,
-      Update(updateCommand, fetchNewObject = true),
-      upsert = upsert,
-      sort   = None,
-      fields = None)
+      query                    = finder,
+      modify                   = Update(updateCommand, fetchNewObject = true, upsert),
+      sort                     = None,
+      fields                   = None,
+      bypassDocumentValidation = false,
+      writeConcern             = GetLastError.Default,
+      maxTimeMS                = Option.empty,
+      collation                = Option.empty,
+      arrayFilters             = Seq.empty
+    )
+
+    val runner = reactivemongo.api.commands.Command.run(BSONSerializationPack, FailoverStrategy())
+
+    implicit val writer: BSONDocumentWriter[ResolvedCollectionCommand[FindAndModify]] =
+      BSONSerializationPack.writer[ResolvedCollectionCommand[FindAndModify]] { BSONFindAndModifyCommand.serialize }
 
     for {
-      maybeUpdated <- collection.db.command(command)
-
-      saveOrUpdateResult <- maybeUpdated match {
+      updateResult <- runner(collection, command, ReadPreference.primary)
+      saveOrUpdateResult <- updateResult.value match {
                              case Some(update) => toDbUpdate(update, insertDocumentId).map(Some(_))
                              case None         => Future.successful(None)
                            }
@@ -104,20 +106,28 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
   }
 
   private def le(updatedExisting: Boolean) =
-    new LastError(
-      ok               = true,
-      err              = None,
-      code             = None,
-      errMsg           = None,
-      originalDocument = None,
-      updated          = 1,
-      updatedExisting  = updatedExisting)
+    LastError(
+      ok                = true,
+      errmsg            = None,
+      code              = None,
+      lastOp            = None,
+      n                 = 1,
+      singleShard       = None,
+      updatedExisting   = updatedExisting,
+      upserted          = None,
+      wnote             = None,
+      wtimeout          = false,
+      waited            = None,
+      wtime             = None,
+      writeErrors       = Nil,
+      writeConcernError = None
+    )
 
   private def toDbUpdate(s: BSONDocument, insertedId: Option[BSONObjectID])(
     implicit reads: Reads[T]): Future[DatabaseUpdate[T]] = {
 
     def createResult(result: T) = insertedId match {
-      case Some(insertedId) if isInsertion(insertedId, result) =>
+      case Some(id) if isInsertion(id, result) =>
         DatabaseUpdate(le(updatedExisting = false), Saved[T](result))
       case _ =>
         DatabaseUpdate(le(updatedExisting = true), Updated[T](result, result))
@@ -125,7 +135,7 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers {
 
     JsObjectReader.read(s).validate[T] match {
       case JsSuccess(result, _) => Future.successful(createResult(result))
-      case JsError(errors)      => Future.failed(new JsResultException(errors))
+      case JsError(errors)      => Future.failed(JsResultException(errors))
     }
   }
 

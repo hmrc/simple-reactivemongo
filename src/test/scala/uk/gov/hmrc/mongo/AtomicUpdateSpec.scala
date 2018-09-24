@@ -55,13 +55,7 @@ object AtomicTestObjectWithIdOverride {
   }
 }
 
-class AtomicUpdateSpec
-    extends WordSpec
-    with Matchers
-    with MongoSpecSupport
-    with BeforeAndAfterEach
-    with Awaiting
-    with CurrentTime {
+class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting {
 
   val repository               = new AtomicTestRepository
   val repositoryWithIdOverride = new AtomicTestRepositoryWithIdOverride

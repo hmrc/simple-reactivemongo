@@ -17,11 +17,11 @@
 package uk.gov.hmrc.mongo
 
 import reactivemongo.api.collections.bson.BSONCollection
+import reactivemongo.api.commands.LastError
+import reactivemongo.api.{DefaultDB, FailoverStrategy}
 import reactivemongo.bson.BSONDocument
 
 import scala.concurrent.duration._
-import reactivemongo.api.{DefaultDB, FailoverStrategy}
-import reactivemongo.api.commands.LastError
 
 trait MongoSpecSupport {
 

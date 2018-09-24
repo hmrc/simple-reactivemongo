@@ -133,10 +133,9 @@ class FindAndUpdateSpec
       descrField.isSuccess shouldBe true
       descrField.asOpt.value shouldEqual modifiedDescr
 
-      (result.value.value \ "key").isEmpty shouldBe true
+      (result.value.value \ "key").toOption.isEmpty shouldBe true
     }
   }
-
 }
 
 final case class Example(key: String, descr: String)

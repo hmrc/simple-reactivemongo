@@ -26,8 +26,8 @@ import reactivemongo.core.errors.GenericDatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers
 import reactivemongo.play.json.collection.JSONBatchCommands.JSONCountCommand._
 import reactivemongo.play.json.collection.JSONCollection
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import reactivemongo.play.json.commands.JSONFindAndModifyCommand.{FindAndModifyResult, Update}
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,8 +38,8 @@ abstract class ReactiveRepository[A, ID](
   mongo: () => DB,
   domainFormat: Format[A],
   idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats)
-    extends Repository[A, ID]
-    with Indexes {
+    extends Indexes
+    with CurrentTime {
 
   import ImplicitBSONHandlers._
   import play.api.libs.json.Json.JsValueWrapper
@@ -57,24 +57,24 @@ abstract class ReactiveRepository[A, ID](
   protected val _Id                   = "_id"
   protected def _id(id: ID): JsObject = Json.obj(_Id -> id)
 
-  override def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] =
+  def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] =
     collection
       .find(Json.obj(query: _*))
       .cursor[A](ReadPreference.primaryPreferred)
       .collect(maxDocs = -1, FailOnError[List[A]]())
 
-  override def findAll(readPreference: ReadPreference = ReadPreference.primaryPreferred)(
+  def findAll(readPreference: ReadPreference = ReadPreference.primaryPreferred)(
     implicit ec: ExecutionContext): Future[List[A]] =
     collection
       .find(Json.obj())
       .cursor[A](readPreference)
       .collect(maxDocs = -1, FailOnError[List[A]]())
 
-  override def findById(id: ID, readPreference: ReadPreference = ReadPreference.primaryPreferred)(
+  def findById(id: ID, readPreference: ReadPreference = ReadPreference.primaryPreferred)(
     implicit ec: ExecutionContext): Future[Option[A]] =
     collection.find(_id(id)).one[A](readPreference)
 
-  override def findAndUpdate(
+  def findAndUpdate(
     query: JsObject,
     update: JsObject,
     fetchNewObject: Boolean           = false,
@@ -98,26 +98,25 @@ abstract class ReactiveRepository[A, ID](
       arrayFilters             = arrayFilters
     )
 
-  override def count(implicit ec: ExecutionContext): Future[Int] = count(Json.obj())
+  def count(implicit ec: ExecutionContext): Future[Int] = count(Json.obj())
 
-  override def count(query: JsObject, readPreference: ReadPreference = ReadPreference.primary)(
+  def count(query: JsObject, readPreference: ReadPreference = ReadPreference.primary)(
     implicit ec: ExecutionContext): Future[Int] =
     collection
       .runCommand(Count(ImplicitlyDocumentProducer.producer(query)), readPreference)
       .map(_.count)
 
-  override def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(
-    implicit ec: ExecutionContext): Future[WriteResult] =
+  def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext): Future[WriteResult] =
     collection.delete(ordered = true, writeConcern).one(Json.obj(), None)
 
-  override def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default)(
+  def removeById(id: ID, writeConcern: WriteConcern = WriteConcern.Default)(
     implicit ec: ExecutionContext): Future[WriteResult] =
     collection.delete(ordered = true, writeConcern).one(_id(id), Some(1))
 
-  override def remove(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[WriteResult] =
+  def remove(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[WriteResult] =
     collection.delete().one(Json.obj(query: _*)) //TODO: pass in the WriteConcern
 
-  override def drop(implicit ec: ExecutionContext): Future[Boolean] =
+  def drop(implicit ec: ExecutionContext): Future[Boolean] =
     collection
       .drop(failIfNotFound = true)
       .map(_ => true)
@@ -126,16 +125,16 @@ abstract class ReactiveRepository[A, ID](
       }
 
   @deprecated("use ReactiveRepository#insert() instead", "3.0.1")
-  override def save(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] = insert(entity)
+  def save(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] = insert(entity)
 
-  override def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] =
+  def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] =
     domainFormat.writes(entity) match {
       case d @ JsObject(_) => collection.insert(d)
       case _ =>
         Future.failed[WriteResult](new Exception("cannot write object") with NoStackTrace)
     }
 
-  override def bulkInsert(entities: Seq[A])(
+  def bulkInsert(entities: Seq[A])(
     implicit ec: ExecutionContext
   ): Future[MultiBulkWriteResult] = {
     val docs           = entities.map(toJsObject)
@@ -178,4 +177,18 @@ abstract class ReactiveRepository[A, ID](
 
   def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
     Future.sequence(indexes.map(ensureIndex))
+}
+
+sealed abstract class UpdateType[A] {
+  def savedValue: A
+}
+
+case class Saved[A](savedValue: A) extends UpdateType[A]
+
+case class Updated[A](previousValue: A, savedValue: A) extends UpdateType[A]
+
+case class DatabaseUpdate[A](writeResult: LastError, updateType: UpdateType[A])
+
+trait Indexes {
+  def indexes: Seq[Index] = Seq.empty
 }

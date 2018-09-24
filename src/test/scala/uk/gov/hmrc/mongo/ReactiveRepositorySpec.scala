@@ -29,62 +29,10 @@ import play.api.libs.json._
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.core.errors.DatabaseException
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
 import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
-import ReactiveMongoFormats._
 
 import scala.concurrent.ExecutionContext
-
-case class NestedModel(a: String, b: String)
-
-case class TestObject(
-  aField: String,
-  anotherField: Option[String]                                             = None,
-  optionalCollection: Option[List[NestedModel]]                            = None,
-  nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
-  modifiedDetails: CreationAndLastModifiedDetail                           = CreationAndLastModifiedDetail(),
-  jsValue: Option[JsValue]                                                 = None,
-  location: (Double, Double)                                               = (0.0, 0.0),
-  date: LocalDate                                                          = LocalDate.now(DateTimeZone.UTC),
-  id: BSONObjectID                                                         = BSONObjectID.generate) {
-
-  def markUpdated(implicit updatedTime: DateTime) = copy(
-    modifiedDetails = modifiedDetails.updated(updatedTime)
-  )
-
-}
-
-object TestObject {
-  implicit val formats: Format[TestObject] = mongoEntity {
-    implicit val locationFormat: Format[(Double, Double)] = TupleFormats.tuple2Format[Double, Double]
-    implicit val nestedModelformats: OFormat[NestedModel] = Json.format[NestedModel]
-    Json.format[TestObject]
-  }
-}
-
-class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
-    extends ReactiveRepository[TestObject, BSONObjectID](
-      collectionName = "simpleTestRepository",
-      mongo          = mc.db,
-      domainFormat   = TestObject.formats,
-      idFormat       = ReactiveMongoFormats.objectIdFormats) {
-
-  override def indexes = Seq(
-    Index(Seq("aField"       -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true),
-    Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex"))
-  )
-}
-
-class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
-    extends ReactiveRepository[TestObject, BSONObjectID](
-      "failingIndexesTestRepository",
-      mc.db,
-      TestObject.formats,
-      ReactiveMongoFormats.objectIdFormats) {
-
-  override def indexes = Seq(
-    Index(Seq("aField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true)
-  )
-}
 
 class ReactiveRepositorySpec
     extends WordSpec
@@ -92,7 +40,6 @@ class ReactiveRepositorySpec
     with MongoSpecSupport
     with BeforeAndAfterEach
     with Awaiting
-    with CurrentTime
     with Eventually
     with LogCapturing {
 
@@ -127,9 +74,9 @@ class ReactiveRepositorySpec
       val e4 = TestObject("4")
 
       val created = for {
-        res1        <- repository.insert(e1)
-        res2        <- repository.insert(e2)
-        res3        <- repository.insert(e3)
+        _           <- repository.insert(e1)
+        _           <- repository.insert(e2)
+        _           <- repository.insert(e3)
         countResult <- repository.count
       } yield countResult
 
@@ -141,10 +88,8 @@ class ReactiveRepositorySpec
       result      should contain(e2)
       result      should contain(e3)
 
-      result should not contain (e4)
-
+      result should not contain e4
     }
-
   }
 
   "findById" should {
@@ -399,4 +344,55 @@ trait LogCapturing {
     logger.setAdditive(true)
     body(appender.list.asScala.toList)
   }
+}
+
+case class NestedModel(a: String, b: String)
+
+case class TestObject(
+  aField: String,
+  anotherField: Option[String]                                             = None,
+  optionalCollection: Option[List[NestedModel]]                            = None,
+  nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
+  modifiedDetails: CreationAndLastModifiedDetail                           = CreationAndLastModifiedDetail(),
+  jsValue: Option[JsValue]                                                 = None,
+  location: (Double, Double)                                               = (0.0, 0.0),
+  date: LocalDate                                                          = LocalDate.now(DateTimeZone.UTC),
+  id: BSONObjectID                                                         = BSONObjectID.generate) {
+
+  def markUpdated(implicit updatedTime: DateTime): TestObject = copy(
+    modifiedDetails = modifiedDetails.updated(updatedTime)
+  )
+}
+
+object TestObject {
+  implicit val formats: Format[TestObject] = mongoEntity {
+    implicit val locationFormat: Format[(Double, Double)] = TupleFormats.tuple2Format[Double, Double]
+    implicit val nestedModelformats: OFormat[NestedModel] = Json.format[NestedModel]
+    Json.format[TestObject]
+  }
+}
+
+class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
+    extends ReactiveRepository[TestObject, BSONObjectID](
+      collectionName = "simpleTestRepository",
+      mongo          = mc.db,
+      domainFormat   = TestObject.formats,
+      idFormat       = ReactiveMongoFormats.objectIdFormats) {
+
+  override def indexes = Seq(
+    Index(Seq("aField"       -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true),
+    Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex"))
+  )
+}
+
+class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
+    extends ReactiveRepository[TestObject, BSONObjectID](
+      "failingIndexesTestRepository",
+      mc.db,
+      TestObject.formats,
+      ReactiveMongoFormats.objectIdFormats) {
+
+  override def indexes = Seq(
+    Index(Seq("aField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true)
+  )
 }
