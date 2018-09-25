@@ -6,7 +6,7 @@ lazy val simpleReactiveMongo = Project(libName, file("."))
   .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
   .settings(
     makePublicallyAvailableOnBintray := true,
-    majorVersion                     := 6
+    majorVersion                     := 7
   )
   .settings(
     scalaVersion        := "2.11.12",
