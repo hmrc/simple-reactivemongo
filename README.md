@@ -4,10 +4,22 @@
 
 Provides simple serialization for [ReactiveMongo](http://reactivemongo.org) - reactive, asynchronous and non-blocking Scala driver for MongoDB.
 
-This started as a fork of [Play-ReactiveMongo](https://github.com/ReactiveMongo/Play-ReactiveMongo) as it seemed like a good idea to refactor out the coupling to a Play application.
+This started as a fork of [Play-ReactiveMongo](https://github.com/ReactiveMongo/Play-ReactiveMongo) as it seemed like a good idea to refactor out the coupling to a Play application. However, since version 7.x.x the dependency to the fork has been dropped in favour of the original `reactivemongo` driver.
 
 With some minimal effort, as the ReactiveMongo people had already done the majority of the work, we felt that adding a base repository class creates a library without some
 of the issues the other simpler libraries have.
+
+## Upgrading from 6.x.x to 7.x.x?
+
+######Major changes:
+
+* The dependency to HMRC's fork of `reactivemongo` has been dropped in favour of the original `reactivemongo` driver. Version 7.x.x depends now on `reactivemongo` 0.16.0.
+* It got merged with `play-reactivemongo` so all classes which used to be provided by that library are now in `simple-reactivemongo` (for instance `ReactiveMongoHmrcModule` Play module and `ReactiveMongoComponent`). As a consequence `simple-reactivemongo` should be the only dependency a service would require for interactions with `MongoDB`. There will be no new version of `play-reactivemongo` depending on the `simple-reactivemongo` 7.x.x or above.
+* There are two versions of the library released for two versions of Play. So 7.x.x-play-25 and 7.x.x-play-26 are compatible with `Play` 2.5 and 2.6 respectively.
+* `reactivemongo` 0.16.0 brings some breaking changes which should be addressed on upgraded to 7.x.x. More can be found [here](http://reactivemongo.org/releases/0.1x/documentation/release-details.html#breaking-changes).
+* `MongoDbConnection` has been deprecated and `ReactiveMongoComponent` is the new provider of `MongoConnector` instances.
+* `ReactiveRepository` was enriched with new `findAndUpdate` and `count` methods.
+* `AtomicUpdate` trait has become deprecated as similar functionality is provided now by `ReactiveRepository.findAndUpdate`.
 
 ## Upgrading from 5.x.x to 6.x.x?
 
@@ -67,24 +79,25 @@ In your project/build.sbt:
 resolvers += Resolver.bintrayRepo("hmrc", "releases")
 
 libraryDependencies ++= Seq(
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "[INSERT_VERSION]",
-  "com.typesafe.play" %% "play-json" % "2.x.x"
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "[INSERT_VERSION]"
 )
 ```
 
-*For Java 7 and Play 2.3.x use versions <=4.1.0*
+* *For Play 2.5.x and above use versions <=7.x.x-play-25*
+* *For Play 2.6.x and above use versions <=7.x.x-play-26*
+* *For Java 7 and Play 2.3.x use versions <=4.1.0*
 
 
 #### Create a Repository class ###
 
-Create a `case class` that represents to serialise to mongo.
+Create a `case class` that represents data model to be serialized/deserialised to `MongoDB`.
 
 Create [JSON Read/Write](http://www.playframework.com/documentation/2.2.x/ScalaJsonCombinators) converters. Or if you are doing nothing special create a companion object for the case class
 with an implicit member set by play.api.libs.json.Json.format[A]
 
 Extend [ReactiveRepository](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/uk/gov/hmrc/mongo/ReactiveRepository.scala) which will provide you with some commonly used functionality.
 
-If the repository requires any indexes override ```indexes: Seq[Index]``` to provide a sequence of indexes that will be applied. Any errors will be logged should they fail.
+If the repository requires any indexes override ```indexes: Seq[Index]``` to provide a sequence of indexes that will be applied. Any errors will be logged and instantiation of the repository should fail.
 
 If you prefer to drop the underscore for the 'id' field in the domain case class then wrap the domain formats in `ReactiveMongoFormats.mongoEntity`
 
@@ -120,8 +133,20 @@ object TestObject {
   }
 }
 
-class SimpleTestRepository(implicit mc: MongoConnector)
-  extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats) {
+import javax.inject._
+import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.ReactiveRepository
+import play.modules.reactivemongo.ReactiveMongoComponent
+
+@Singleton
+class SimpleTestRepository @Inject()(mongoComponent: ReactiveMongoComponent)
+    extends ReactiveRepository[TestObject, BSONObjectID](
+      collectionName = "simpleTestRepository",
+      mongo          = mongoComponent.mongoConnector.db,
+      domainFormat   = TestObject.formats,
+      idFormat       = ReactiveMongoFormats.objectIdFormats
+    ) {
 
   import reactivemongo.api.indexes.IndexType
   import reactivemongo.api.indexes.Index
@@ -151,51 +176,3 @@ mongo-async-driver {
   }
 }
 ```
-
-#### Create a repository class using AtomicsUpdate
-
-The AtomicUpdate trait is a wrapper around the findAndModify command which modifies and returns a single document, using atomic operations. By default, the returned mongo document will include the
-modifications made on the update. Please refer to the mongo documentation concerning the commands which can be supplied to the update operations.
-
-
-To include the trait AtomicsUpdate to your existing repository, follow the steps below.
-
-1) Update your repository to use the AtomicUpdate trait, passing the type of the object being read/written.
-
-```scala
-class SimpleTestRepository(implicit mc: MongoConnector)
-  extends ReactiveRepository[TestObject, BSONObjectID]("simpleTestRepository", mc.db, TestObject.formats, ReactiveMongoFormats.objectIdFormats)
-  with AtomicUpdate[TestObject]
-  {
-```
-
-2) Include the below override in your class which is extending AtomicUpdate. This function is invoked by AtomicUpdate to decide if the update is either an
- upsert or an update.
-
-```scala
-    override def isInsertion(suppliedId: BSONObjectID, returned: AtomicTestObject): Boolean =
-      suppliedId.equals(returned.id)
-```
-
-
-The two functions exposed from the AtomicUpdate trait are detailed below which both return the type Future[Option[DatabaseUpdate[T]]], where
-DatabaseUpdate encapsulates the update type which can be either Saved (new insert) or Updated (updated record). Please note the document with the modifications
-applied on the update command to mongo will be returned.
-
-1) def atomicUpsert(finder: BSONDocument, modifierBson: BSONDocument)
-This function will invoke atomicSaveOrUpdate passing the 'upsert' flag as true. Function used to insert a new record.
-
-2)  def atomicSaveOrUpdate(finder: BSONDocument, modifierBson: BSONDocument, upsert: Boolean) 
-This function is used to override the upsert parameter.
-
-The parameters for the functions above are defined below:-
-
-<ul>
-<li>finder          -    A BSON finder used to find an existing record.</li>
-<li>modifierBson    -    The BSON modifier to be applied.</li>
-<li>upsert          -    If the value is true, a BSONDocument will be added to the modifierBson parameter to generate the Id field on the collection using BSONObjectID.generate. If the value is false, no additional BSONDocument will be applied to modifierBson. If the 'finder' returns no document, then None will be returned. If unsure if the record already exists, then set the 'upsert' value to true.</li>
-</ul>
-Please refer to the unit test AtomicUpdateSpec for simple examples concerning using the trait AtomicUpdate.
-
-For documentation, please refer to http://docs.mongodb.org/manual/reference/command/findAndModify.
-

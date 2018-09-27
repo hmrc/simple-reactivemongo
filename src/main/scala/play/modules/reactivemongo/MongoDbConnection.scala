@@ -20,7 +20,7 @@ import play.api.Play
 import reactivemongo.api.DefaultDB
 import uk.gov.hmrc.mongo.MongoConnector
 
-@deprecated("Static reference to running play app. Use injection instead.", "7.0.0")
+@deprecated("Static reference to running play app. Inject ReactiveMongoComponent instead.", "7.0.0")
 trait MongoDbConnection {
 
   lazy val mongoConnector: MongoConnector = Play.current.injector.instanceOf[ReactiveMongoComponent].mongoConnector

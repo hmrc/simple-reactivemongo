@@ -63,7 +63,6 @@ class MongoConfig(
     .orElse(configuration.getOptional[Configuration](s"${environment.mode}.mongodb"))
     .orElse(configuration.getOptional[Configuration](s"${Mode.Dev}.mongodb"))
     .getOrElse(throw new Exception("The application does not contain required mongodb configuration"))
-
 }
 
 private object DelayFactor extends (Option[Configuration] => Int => Double) {
