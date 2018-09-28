@@ -19,76 +19,20 @@ package uk.gov.hmrc.mongo
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
 import ch.qos.logback.core.read.ListAppender
+import com.outworkers.util.samplers._
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.slf4j.LoggerFactory
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json._
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.core.errors.DatabaseException
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
 import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
 
 import scala.concurrent.ExecutionContext
-
-case class NestedModel(a: String, b: String)
-
-case class TestObject(
-  aField: String,
-  anotherField: Option[String]                                             = None,
-  optionalCollection: Option[List[NestedModel]]                            = None,
-  nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
-  modifiedDetails: CreationAndLastModifiedDetail                           = CreationAndLastModifiedDetail(),
-  jsValue: Option[JsValue]                                                 = None,
-  location: Tuple2[Double, Double]                                         = (0.0, 0.0),
-  date: LocalDate                                                          = LocalDate.now(DateTimeZone.UTC),
-  id: BSONObjectID                                                         = BSONObjectID.generate) {
-
-  def markUpdated(implicit updatedTime: DateTime) = copy(
-    modifiedDetails = modifiedDetails.updated(updatedTime)
-  )
-
-}
-
-object TestObject {
-
-  import ReactiveMongoFormats.{localDateFormats, mongoEntity, objectIdFormats}
-
-  implicit val formats = mongoEntity {
-
-    implicit val locationFormat = TupleFormats.tuple2Format[Double, Double]
-
-    implicit val nestedModelformats = Json.format[NestedModel]
-
-    Json.format[TestObject]
-  }
-}
-
-class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
-    extends ReactiveRepository[TestObject, BSONObjectID](
-      "simpleTestRepository",
-      mc.db,
-      TestObject.formats,
-      ReactiveMongoFormats.objectIdFormats) {
-
-  override def indexes = Seq(
-    Index(Seq("aField"       -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true),
-    Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex"))
-  )
-}
-
-class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
-    extends ReactiveRepository[TestObject, BSONObjectID](
-      "failingIndexesTestRepository",
-      mc.db,
-      TestObject.formats,
-      ReactiveMongoFormats.objectIdFormats) {
-
-  override def indexes = Seq(
-    Index(Seq("aField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true)
-  )
-}
 
 class ReactiveRepositorySpec
     extends WordSpec
@@ -96,7 +40,6 @@ class ReactiveRepositorySpec
     with MongoSpecSupport
     with BeforeAndAfterEach
     with Awaiting
-    with CurrentTime
     with Eventually
     with LogCapturing {
 
@@ -131,9 +74,9 @@ class ReactiveRepositorySpec
       val e4 = TestObject("4")
 
       val created = for {
-        res1        <- repository.save(e1)
-        res2        <- repository.save(e2)
-        res3        <- repository.save(e3)
+        _           <- repository.insert(e1)
+        _           <- repository.insert(e2)
+        _           <- repository.insert(e3)
         countResult <- repository.count
       } yield countResult
 
@@ -145,10 +88,8 @@ class ReactiveRepositorySpec
       result      should contain(e2)
       result      should contain(e3)
 
-      result should not contain (e4)
-
+      result should not contain e4
     }
-
   }
 
   "findById" should {
@@ -156,7 +97,7 @@ class ReactiveRepositorySpec
     "return an existing record" in {
       val e1 = TestObject("1")
 
-      await(repository.save(e1))
+      await(repository.insert(e1))
 
       val result: Option[TestObject] = await(repository.findById(e1.id))
       result should not be None
@@ -175,7 +116,7 @@ class ReactiveRepositorySpec
     "remove the identified record" in {
       val e1 = TestObject("1")
 
-      await(repository.save(e1))
+      await(repository.insert(e1))
 
       val removeResult = await(repository.removeById(e1.id))
       val inError      = !removeResult.ok || removeResult.code.isDefined
@@ -192,7 +133,7 @@ class ReactiveRepositorySpec
     "remove by one field" in {
       val e1 = TestObject("1", Some("used to identify"))
 
-      await(repository.save(e1))
+      await(repository.insert(e1))
 
       val removeResult = await(repository.remove("anotherField" -> "used to identify"))
       val inError      = !removeResult.ok || removeResult.code.isDefined
@@ -208,7 +149,7 @@ class ReactiveRepositorySpec
 
       val e1 = TestObject("1", Some("used to identify"))
 
-      await(repository.save(e1))
+      await(repository.insert(e1))
 
       val removeResult = await(repository.remove("_id" -> e1.id, "anotherField" -> "used to identify"))
       val inError      = !removeResult.ok || removeResult.code.isDefined
@@ -226,20 +167,18 @@ class ReactiveRepositorySpec
       await(repository.ensureIndexes)
 
       val originalSave = TestObject("orignal-save")
-      await(repository.save(originalSave))
+      await(repository.insert(originalSave))
 
       val notUpsert = originalSave.copy("should-not-upsert")
-      a[DatabaseException] should be thrownBy await(repository.save(notUpsert))
+      a[DatabaseException] should be thrownBy await(repository.insert(notUpsert))
     }
   }
 
   "Creation of Indexes" should {
-    "should be done based on provided Indexes" in new LogCapturing {
+    "be done based on provided Indexes" in new LogCapturing {
       await(repository.drop)
-      await(repository.collection.indexesManager.list()) shouldBe empty
-
       await(repository.ensureIndexes)
-      await(repository.save(TestObject("random_object")))
+      await(repository.insert(TestObject("random_object")))
 
       val indexes = await(repository.collection.indexesManager.list()).map(f => f.name.getOrElse(""))
       indexes should contain("aFieldUniqueIdx")
@@ -254,16 +193,16 @@ class ReactiveRepositorySpec
       await(repository.drop)
       await(repository.ensureIndexes)
 
-      await(repository.save(saveWithoutError))
+      await(repository.insert(saveWithoutError))
 
-      a[DatabaseException] should be thrownBy await(repository.save(shouldNotSave))
+      a[DatabaseException] should be thrownBy await(repository.insert(shouldNotSave))
     }
 
     "should not log errors when all are created successfully" in {
       withCaptureOfLoggingFrom[SimpleTestRepository] { logList =>
         await(repository.drop)
         await(repository.ensureIndexes)
-        await(repository.save(TestObject("random_object")))
+        await(repository.insert(TestObject("random_object")))
 
         eventually(timeout(Span(5, Seconds))) {
           logList shouldBe empty
@@ -275,8 +214,8 @@ class ReactiveRepositorySpec
       withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
         await(uniqueIndexRepository.drop)
 
-        await(uniqueIndexRepository.save(TestObject("uniqueKey", Some("bogus"))))
-        await(uniqueIndexRepository.save(TestObject("uniqueKey", Some("whatever"))))
+        await(uniqueIndexRepository.insert(TestObject("uniqueKey", Some("bogus"))))
+        await(uniqueIndexRepository.insert(TestObject("uniqueKey", Some("whatever"))))
 
         await(uniqueIndexRepository.ensureIndexes) shouldBe Seq(false)
         logList.size                               should be(1)
@@ -310,7 +249,7 @@ class ReactiveRepositorySpec
         ))
       val saved = TestObject("jsValueTest", jsValue = Some(unknownStructure))
 
-      await(repository.save(saved))
+      await(repository.insert(saved))
 
       val result: Option[TestObject] = await(repository.findById(saved.id))
       result should not be None
@@ -324,14 +263,42 @@ class ReactiveRepositorySpec
     }
   }
 
+  "Counting elements" should {
+    "work if no specific query is passed" in {
+      val existingDocuments = List.fill(2)(TestObject(gen[String]))
+
+      val chain = for {
+        _     <- repository.bulkInsert(existingDocuments)
+        count <- repository.count
+      } yield count
+
+      await(chain) shouldBe existingDocuments.size
+    }
+
+    "consider a subset of documents based on a passed query" in {
+      val now   = LocalDate.now(DateTimeZone.UTC)
+      val later = now.plusDays(2)
+
+      val currentDocuments = List.fill(2)(TestObject(aField  = gen[String], date = now))
+      val futureDocuments  = List.fill(10)(TestObject(aField = gen[String], date = later))
+
+      val chain = for {
+        _     <- repository.bulkInsert(currentDocuments ++ futureDocuments)
+        count <- repository.count(Json.obj("date" -> Json.obj("$gt" -> now.plusDays(1))))
+      } yield count
+
+      await(chain) shouldBe futureDocuments.size
+    }
+  }
+
   "Location field" should {
 
     "be stored" in {
 
-      val coordinates: Tuple2[Double, Double] = (51.512787, -0.090796)
-      val saved                               = TestObject("storing a tuple2", location = coordinates)
+      val coordinates: (Double, Double) = (51.512787, -0.090796)
+      val saved                         = TestObject("storing a tuple2", location = coordinates)
 
-      await(repository.save(saved))
+      await(repository.insert(saved))
 
       val result: Option[TestObject] = await(repository.findById(saved.id))
       result should not be None
@@ -377,4 +344,55 @@ trait LogCapturing {
     logger.setAdditive(true)
     body(appender.list.asScala.toList)
   }
+}
+
+case class NestedModel(a: String, b: String)
+
+case class TestObject(
+  aField: String,
+  anotherField: Option[String]                                             = None,
+  optionalCollection: Option[List[NestedModel]]                            = None,
+  nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
+  modifiedDetails: CreationAndLastModifiedDetail                           = CreationAndLastModifiedDetail(),
+  jsValue: Option[JsValue]                                                 = None,
+  location: (Double, Double)                                               = (0.0, 0.0),
+  date: LocalDate                                                          = LocalDate.now(DateTimeZone.UTC),
+  id: BSONObjectID                                                         = BSONObjectID.generate) {
+
+  def markUpdated(implicit updatedTime: DateTime): TestObject = copy(
+    modifiedDetails = modifiedDetails.updated(updatedTime)
+  )
+}
+
+object TestObject {
+  implicit val formats: Format[TestObject] = mongoEntity {
+    implicit val locationFormat: Format[(Double, Double)] = TupleFormats.tuple2Format[Double, Double]
+    implicit val nestedModelformats: OFormat[NestedModel] = Json.format[NestedModel]
+    Json.format[TestObject]
+  }
+}
+
+class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
+    extends ReactiveRepository[TestObject, BSONObjectID](
+      collectionName = "simpleTestRepository",
+      mongo          = mc.db,
+      domainFormat   = TestObject.formats,
+      idFormat       = ReactiveMongoFormats.objectIdFormats) {
+
+  override def indexes = Seq(
+    Index(Seq("aField"       -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true),
+    Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex"))
+  )
+}
+
+class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
+    extends ReactiveRepository[TestObject, BSONObjectID](
+      "failingIndexesTestRepository",
+      mc.db,
+      TestObject.formats,
+      ReactiveMongoFormats.objectIdFormats) {
+
+  override def indexes = Seq(
+    Index(Seq("aField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true)
+  )
 }

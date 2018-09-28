@@ -1,10 +1,17 @@
-val nameApp = "simple-reactivemongo"
+import PlayCrossCompilation._
 
-lazy val simpleReactiveMongo = Project(nameApp, file("."))
-  .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
+val libName = "simple-reactivemongo"
+
+lazy val simpleReactiveMongo = Project(libName, file("."))
+  .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
+  .settings(
+    makePublicallyAvailableOnBintray := true,
+    majorVersion                     := 7
+  )
   .settings(
     scalaVersion        := "2.11.12",
-    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
+    libraryDependencies ++= LibraryDependencies.compile ++ LibraryDependencies.test,
     resolvers           += Resolver.typesafeRepo("releases"),
-    crossScalaVersions  := Seq("2.11.12", "2.12.6")
+    crossScalaVersions  := Seq("2.11.12", "2.12.6"),
+    playCrossCompilationSettings
   )

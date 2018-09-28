@@ -19,7 +19,6 @@ package uk.gov.hmrc.mongo
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import play.api.libs.json.{JsResultException, Json}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONNull, BSONObjectID, BSONString}
 
@@ -41,7 +40,7 @@ case class AtomicTestObjectWithIdOverride(
 
 object AtomicTestObject {
 
-  import ReactiveMongoFormats.{localDateFormats, mongoEntity, objectIdFormats}
+  import ReactiveMongoFormats._
 
   implicit val formats = mongoEntity {
     Json.format[AtomicTestObject]
@@ -49,20 +48,14 @@ object AtomicTestObject {
 }
 object AtomicTestObjectWithIdOverride {
 
-  import ReactiveMongoFormats.{localDateFormats, mongoEntity, objectIdFormats}
+  import ReactiveMongoFormats._
 
   implicit val formats = mongoEntity {
     Json.format[AtomicTestObjectWithIdOverride]
   }
 }
 
-class AtomicUpdateSpec
-    extends WordSpec
-    with Matchers
-    with MongoSpecSupport
-    with BeforeAndAfterEach
-    with Awaiting
-    with CurrentTime {
+class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting {
 
   val repository               = new AtomicTestRepository
   val repositoryWithIdOverride = new AtomicTestRepositoryWithIdOverride
@@ -87,9 +80,9 @@ class AtomicUpdateSpec
       val result: List[AtomicTestObject] = await(repository.findAll())
 
       result.size           shouldBe 2
-      result.head.name      shouldBe (a1.name)
+      result.head.name      shouldBe a1.name
       result.head.id        shouldBe a[BSONObjectID]
-      result.tail.head.name shouldBe (a2.name)
+      result.tail.head.name shouldBe a2.name
       result.tail.head.id   shouldBe a[BSONObjectID]
     }
 
@@ -117,10 +110,10 @@ class AtomicUpdateSpec
       val result: List[AtomicTestObjectWithIdOverride] = await(repositoryWithIdOverride.findAll())
 
       result.size      shouldBe 2
-      result.head.name shouldBe (a1.name)
+      result.head.name shouldBe a1.name
 
       result.head.idAtomic.get      shouldBe a[BSONObjectID]
-      result.tail.head.name         shouldBe (a2.name)
+      result.tail.head.name         shouldBe a2.name
       result.tail.head.idAtomic.get shouldBe a[BSONObjectID]
     }
 
@@ -129,7 +122,7 @@ class AtomicUpdateSpec
       val existingRecord = AtomicTestObject("namea", "othervalueb", id = BSONObjectID.generate)
       val updateRecord   = existingRecord.copy(name                    = "updated")
 
-      await(repository.save(existingRecord))
+      await(repository.insert(existingRecord))
 
       val atomicResult = await(
         repository.atomicUpsert(
@@ -149,7 +142,7 @@ class AtomicUpdateSpec
       val existingRecord = AtomicTestObject("namea", "othervalueb", id = BSONObjectID.generate)
       val updateRecord   = existingRecord.copy(name                    = "updated", someOtherField = "other data")
 
-      await(repository.save(existingRecord))
+      await(repository.insert(existingRecord))
 
       val atomicResult = await(
         repository.atomicUpsert(
@@ -171,7 +164,7 @@ class AtomicUpdateSpec
       val existingRecord = AtomicTestObject("namea", "othervalueb", id = BSONObjectID.generate)
       val updateRecord   = existingRecord.copy(name                    = "updated", someOtherField = "other data")
 
-      await(repository.save(existingRecord))
+      await(repository.insert(existingRecord))
 
       val atomicResult = await(
         repository.atomicUpdate(
@@ -194,7 +187,7 @@ class AtomicUpdateSpec
       val existingRecord = AtomicTestObject("namea", "othervalueb", Some("optional data"), id = BSONObjectID.generate)
       val updateRecord   = existingRecord.copy(optionalValue                                  = None)
 
-      await(repository.save(existingRecord))
+      await(repository.insert(existingRecord))
 
       val atomicResult = await(
         repository.atomicUpsert(

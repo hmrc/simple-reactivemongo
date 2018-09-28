@@ -17,37 +17,43 @@
 package uk.gov.hmrc.mongo
 
 import reactivemongo.api.collections.bson.BSONCollection
+import reactivemongo.api.commands.LastError
+import reactivemongo.api.{DefaultDB, FailoverStrategy}
 import reactivemongo.bson.BSONDocument
-import reactivemongo.core.commands.LastError
 
 import scala.concurrent.duration._
-import reactivemongo.api.FailoverStrategy
 
 trait MongoSpecSupport {
 
-  protected def databaseName = "test-" + this.getClass.getSimpleName
+  protected def databaseName: String = "test-" + this.getClass.getSimpleName
 
   protected def mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName"
 
-  implicit val mongoConnectorForTest = new MongoConnector(mongoUri)
+  implicit val mongoConnectorForTest: MongoConnector = MongoConnector(mongoUri)
 
-  implicit val mongo = mongoConnectorForTest.db
+  implicit val mongo: () => DefaultDB = mongoConnectorForTest.db
 
   def bsonCollection(name: String)(
-    failoverStrategy: FailoverStrategy = mongoConnectorForTest.helper.db.failoverStrategy): BSONCollection = {
-    import reactivemongo.api._
+    failoverStrategy: FailoverStrategy = mongoConnectorForTest.helper.db.failoverStrategy): BSONCollection =
     mongoConnectorForTest.helper.db(name, failoverStrategy)
-  }
 
   def lastError(successful: Boolean, updated: Boolean = false, originalDoc: Option[BSONDocument] = None) =
     LastError(
-      ok               = successful,
-      err              = None,
-      code             = None,
-      errMsg           = None,
-      originalDocument = originalDoc,
-      updated          = if (updated) 1 else 0,
-      updatedExisting  = updated)
+      ok                = successful,
+      errmsg            = None,
+      code              = None,
+      lastOp            = None,
+      n                 = if (updated) 1 else 0,
+      singleShard       = None,
+      updatedExisting   = updated,
+      upserted          = None,
+      wnote             = None,
+      wtimeout          = false,
+      waited            = None,
+      wtime             = None,
+      writeErrors       = Nil,
+      writeConcernError = None
+    )
 
 }
 
@@ -55,9 +61,9 @@ trait Awaiting {
 
   import scala.concurrent._
 
-  implicit val ec = ExecutionContext.Implicits.global
+  implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
 
-  val timeout = 5 seconds
+  val timeout: FiniteDuration = 5.seconds
 
-  def await[A](future: Future[A])(implicit timeout: Duration = timeout) = Await.result(future, timeout)
+  def await[A](future: Future[A])(implicit timeout: Duration = timeout): A = Await.result(future, timeout)
 }

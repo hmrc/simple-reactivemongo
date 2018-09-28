@@ -18,6 +18,8 @@ package uk.gov.hmrc.mongo
 
 import reactivemongo.api.FailoverStrategy
 
+import scala.language.postfixOps
+
 trait SimpleMongoConnection {
 
   import reactivemongo.api.{DefaultDB, MongoConnection}
