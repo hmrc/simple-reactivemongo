@@ -25,7 +25,7 @@ import scala.language.postfixOps
 
 object ReactiveMongoHelper {
 
-  @deprecated(message = "use case class constructor that takes MongoConnectionOptions", "0.1.0")
+  @deprecated(message = "Use case class constructor that takes MongoConnectionOptions", "7.0.0")
   def apply(
     dbName: String,
     servers: Seq[String],
