@@ -11,11 +11,12 @@ of the issues the other simpler libraries have.
 
 ## Upgrading from 6.x.x to 7.x.x?
 
-######Major changes:
+###Major changes:
 
 * The dependency to HMRC's fork of `reactivemongo` has been dropped in favour of the original `reactivemongo` driver. Version 7.x.x depends now on `reactivemongo` 0.16.0.
 * It got merged with `play-reactivemongo` so all classes which used to be provided by that library are now in `simple-reactivemongo` (for instance `ReactiveMongoHmrcModule` Play module and `ReactiveMongoComponent`). As a consequence `simple-reactivemongo` should be the only dependency a service would require for interactions with `MongoDB`. There will be no new version of `play-reactivemongo` depending on the `simple-reactivemongo` 7.x.x or above.
 * There are two versions of the library released for two versions of Play. So 7.x.x-play-25 and 7.x.x-play-26 are compatible with `Play` 2.5 and 2.6 respectively.
+* you may get more warnings if your connection string includes nonexistent hosts, the solution then is to fix the connection string and only keep valid hosts
 * `reactivemongo` 0.16.0 brings some breaking changes which should be addressed on upgraded to 7.x.x. More can be found [here](http://reactivemongo.org/releases/0.1x/documentation/release-details.html#breaking-changes).
 * `MongoDbConnection` has been deprecated and `ReactiveMongoComponent` is the new provider of `MongoConnector` instances.
 * `ReactiveRepository` was enriched with new `findAndUpdate` and `count` methods.
