@@ -59,7 +59,7 @@ class FindAndUpdateSpec
       repo.find("key" -> example.key).futureValue.loneElement shouldBe Example(example.key, updatedDescription)
     }
 
-    "return modified document if 'fetchNewObject' is set to false" in {
+    "return modified document if 'fetchNewObject' is set to true" in {
       val example            = gen[Example]
       val updatedDescription = gen[String]
 
