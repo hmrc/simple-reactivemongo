@@ -219,7 +219,7 @@ class ReactiveRepositorySpec
 
         await(uniqueIndexRepository.ensureIndexes) shouldBe Seq(false)
         logList.size                               should be(1)
-        logList.head.getMessage contains uniqueIndexRepository.message
+        logList.head.getMessage contains s"${uniqueIndexRepository.message} (${uniqueIndexRepository.indexName})"
       }
     }
 
@@ -392,7 +392,9 @@ class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionCon
       TestObject.formats,
       ReactiveMongoFormats.objectIdFormats) {
 
+  def indexName = "index1"
+
   override def indexes = Seq(
-    Index(Seq("aField" -> IndexType.Ascending), name = Some("index1"), unique = true, sparse = true)
+    Index(Seq("aField" -> IndexType.Ascending), name = Some(indexName), unique = true, sparse = true)
   )
 }

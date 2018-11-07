@@ -166,13 +166,13 @@ abstract class ReactiveRepository[A, ID](
             // this is for backwards compatibility to mongodb 2.6.x
             throw GenericDatabaseException(msg, wr.code)
           } else Some(msg)
-          logger.error(s"$message : '${maybeMsg.map(_.toString)}'")
+          logger.error(s"$message (${index.eventualName}) : '${maybeMsg.map(_.toString)}'")
         }
         wr.ok
       })
       .recover {
         case t =>
-          logger.error(message, t)
+          logger.error(s"$message (${index.eventualName})", t)
           false
       }
 
