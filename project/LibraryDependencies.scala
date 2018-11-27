@@ -3,7 +3,7 @@ import sbt._
 object LibraryDependencies {
 
   private val play25Version = "2.5.12"
-  private val play26Version = "2.6.15"
+  private val play26Version = "2.6.20"
 
   val compile: Seq[ModuleID] = PlayCrossCompilation.dependencies(
     shared = Seq(
@@ -11,16 +11,16 @@ object LibraryDependencies {
       "org.reactivemongo"      %% "reactivemongo" % "0.16.0"
     ),
     play25 = Seq(
-      "org.slf4j"         % "slf4j-api"                % "1.7.6",
+      "org.slf4j"         % "slf4j-api"                % "1.7.21",
       "com.typesafe.play" %% "play"                    % play25Version,
-      "com.typesafe.play" %% "play-json"               % "2.5.16",
+      "com.typesafe.play" %% "play-json"               % "2.5.12",
       "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.0-play25"
     ),
     play26 = Seq(
       "org.slf4j"         % "slf4j-api"                % "1.7.25",
       "com.typesafe.play" %% "play"                    % play26Version,
       "com.typesafe.play" %% "play-guice"              % play26Version,
-      "com.typesafe.play" %% "play-json"               % "2.6.9",
+      "com.typesafe.play" %% "play-json"               % "2.6.10",
       "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.0-play26"
     )
   )
