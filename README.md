@@ -9,6 +9,9 @@ This started as a fork of [Play-ReactiveMongo](https://github.com/ReactiveMongo/
 With some minimal effort, as the ReactiveMongo people had already done the majority of the work, we felt that adding a base repository class creates a library without some
 of the issues the other simpler libraries have.
 
+## Until further notice please only use versions up to 6.x.x
+ReactiveMongo 0.16.0 which is a dependency of simple-reactivemongo 7.x.x has a performance problem that happens when nodes in the replica set go down and up again. Version 6.2.0 is not affected and is recommended until furhter notice.
+
 ## Upgrading from 6.x.x to 7.x.x?
 
 ###Major changes:
