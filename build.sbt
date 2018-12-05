@@ -13,5 +13,6 @@ lazy val simpleReactiveMongo = Project(libName, file("."))
     libraryDependencies ++= LibraryDependencies.compile ++ LibraryDependencies.test,
     resolvers           += Resolver.typesafeRepo("releases"),
     crossScalaVersions  := Seq("2.11.12"),
-    playCrossCompilationSettings
+    playCrossCompilationSettings,
+    excludeDependencies += "io.netty" % "netty-handler"
   )
