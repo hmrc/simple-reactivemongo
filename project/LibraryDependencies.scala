@@ -13,7 +13,13 @@ object LibraryDependencies {
     play25 = Seq(
       "org.slf4j"         % "slf4j-api"                % "1.7.21",
       "com.typesafe.play" %% "play"                    % play25Version,
-      "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.0-play25"
+      "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.0-play25",
+      // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
+      "com.fasterxml.jackson.core"     % "jackson-core"            % "2.9.7",
+      "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.9.7",
+      "com.fasterxml.jackson.core"     % "jackson-annotations"     % "2.9.7",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8"   % "2.9.7",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.7"
     ),
     play26 = Seq(
       "org.slf4j"         % "slf4j-api"                % "1.7.25",
