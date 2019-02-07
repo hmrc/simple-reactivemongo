@@ -19,7 +19,9 @@ object LibraryDependencies {
       "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.9.7",
       "com.fasterxml.jackson.core"     % "jackson-annotations"     % "2.9.7",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8"   % "2.9.7",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.7"
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.7",
+      // force dependencies due to security flaws found in xercesImpl 2.11.0
+      "xerces" % "xercesImpl" % "2.12.0"
     ),
     play26 = Seq(
       "org.slf4j"         % "slf4j-api"                % "1.7.25",
