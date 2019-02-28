@@ -7,7 +7,7 @@ object LibraryDependencies {
 
   val compile: Seq[ModuleID] = PlayCrossCompilation.dependencies(
     shared = Seq(
-      "com.github.nscala-time" %% "nscala-time"   % "2.2.0",
+      "com.github.nscala-time" %% "nscala-time"   % "2.22.0",
       "org.reactivemongo"      %% "reactivemongo" % "0.16.1"
     ),
     play25 = Seq(
