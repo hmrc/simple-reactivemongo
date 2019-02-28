@@ -12,6 +12,7 @@ object LibraryDependencies {
     ),
     play25 = Seq(
       "org.slf4j"         % "slf4j-api"                % "1.7.21",
+      "org.slf4j"         % "log4j-over-slf4j"         % "1.7.21",
       "com.typesafe.play" %% "play"                    % play25Version,
       "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.0-play25",
       // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
@@ -25,6 +26,7 @@ object LibraryDependencies {
     ),
     play26 = Seq(
       "org.slf4j"         % "slf4j-api"                % "1.7.25",
+      "org.slf4j"         % "log4j-over-slf4j"         % "1.7.25",
       "com.typesafe.play" %% "play"                    % play26Version,
       "com.typesafe.play" %% "play-guice"              % play26Version,
       "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.0-play26"
