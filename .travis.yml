@@ -23,3 +23,9 @@ before_script:
   - "sudo service mongod start"
   - "sleep 15" #mongo may not be responded directly. See http://docs.travis-ci.com/user/database-setup/#MongoDB
   - "mongo --version"
+
+cache:
+  directories:
+    - $HOME/.sbt
+    - $HOME/.ivy2
+    - $HOME/.m2
