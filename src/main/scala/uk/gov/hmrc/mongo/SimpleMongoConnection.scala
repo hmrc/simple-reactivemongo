@@ -18,6 +18,7 @@ package uk.gov.hmrc.mongo
 
 import reactivemongo.api.FailoverStrategy
 
+import scala.concurrent.duration.FiniteDuration
 import scala.language.postfixOps
 
 trait SimpleMongoConnection {
@@ -30,6 +31,7 @@ trait SimpleMongoConnection {
 
   val mongoConnectionUri: String
   val failoverStrategy: Option[FailoverStrategy]
+  val dbTimeout: Option[FiniteDuration]
 
   implicit def db: () => DefaultDB = () => mongoDb
 
@@ -39,18 +41,18 @@ trait SimpleMongoConnection {
 
   lazy val helper: ReactiveMongoHelper = MongoConnection.parseURI(mongoConnectionUri) match {
     case Success(MongoConnection.ParsedURI(hosts, options, ignoreOptions, Some(db), auth)) =>
-      ReactiveMongoHelper(db, hosts.map(h => h._1 + ":" + h._2), auth.toList, failoverStrategy, options)
+      ReactiveMongoHelper(db, hosts.map(h => h._1 + ":" + h._2), auth.toList, failoverStrategy, options, dbTimeout)
     case Success(MongoConnection.ParsedURI(_, _, _, None, _)) =>
       throw new Exception(s"Missing database name in mongodb.uri '$mongoConnectionUri'")
     case Failure(e) => throw new Exception(s"Invalid mongodb.uri '$mongoConnectionUri'", e)
   }
 
   def close() {
-    val f = helper.connection.askClose()(10 seconds)
-    Await.ready(f, 10 seconds)
+    val f = helper.connection.askClose()(dbTimeout.getOrElse(ReactiveMongoHelper.DEFAULT_DB_TIMEOUT))
+    Await.ready(f, dbTimeout.getOrElse(ReactiveMongoHelper.DEFAULT_DB_TIMEOUT))
   }
 
 }
 
-case class MongoConnector(mongoConnectionUri: String, failoverStrategy: Option[FailoverStrategy] = None)
+case class MongoConnector(mongoConnectionUri: String, failoverStrategy: Option[FailoverStrategy] = None, dbTimeout: Option[FiniteDuration] = None)
     extends SimpleMongoConnection

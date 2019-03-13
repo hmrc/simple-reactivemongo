@@ -58,6 +58,10 @@ class MongoConfig(
       case _ => None
     }
 
+  lazy val dbTimeout: Option[FiniteDuration] =
+    mongoConfig.getOptional[Long]("dbTimeoutMsecs")
+        .map(dbTimeout => new FiniteDuration(dbTimeout, TimeUnit.MILLISECONDS))
+
   private lazy val mongoConfig: Configuration = configuration
     .getOptional[Configuration]("mongodb")
     .orElse(configuration.getOptional[Configuration](s"${environment.mode}.mongodb"))

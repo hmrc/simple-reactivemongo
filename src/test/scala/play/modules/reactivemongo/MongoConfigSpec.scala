@@ -99,6 +99,15 @@ class MongoConfigSpec extends WordSpec with MockFactory with PropertyChecks {
       s"return None for 'maybeFailoverStrategy' if '$mongodbConfigKey.failoverStrategy' not present in config" in new Setup {
         mongoConfig(mongodbConfigKey -> Map.empty).maybeFailoverStrategy shouldBe None
       }
+
+      s"return None for 'dbTimeoutMsecs' if '$mongodbConfigKey.dbTimeoutMsecs' not present in config" in new Setup {
+        mongoConfig(mongodbConfigKey -> Map.empty).dbTimeout shouldBe None
+      }
+
+      s"override 'dbTimeoutMsecs' if specified under '$mongodbConfigKey.dbTimeoutMsecs'" in new Setup {
+        val dbTimeout = mongoConfig(s"$mongodbConfigKey.dbTimeoutMsecs" -> dbTimeoutMsecs).dbTimeout
+        dbTimeout shouldBe Some(new FiniteDuration(dbTimeoutMsecs, MILLISECONDS))
+      }
     }
   }
 
@@ -108,6 +117,7 @@ class MongoConfigSpec extends WordSpec with MockFactory with PropertyChecks {
     val uri                       = "mongouri"
     val channels                  = 1
     val initialDelayMsecs         = 1234
+    val dbTimeoutMsecs            = 1234
     val retries                   = 5
 
     def mongoConfig(configEntries: (String, Any)*): MongoConfig =

@@ -164,6 +164,15 @@ class SimpleTestRepository @Inject()(mongoComponent: ReactiveMongoComponent)
 
 Formats for BSONObjectId and Joda time classes are implemented (see [ReactiveMongoFormats](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/uk/gov/hmrc/mongo/ReactiveMongoFormats.scala))
 
+#### Configuration Options
+
+There is a default timeout of 10 seconds when making connections with Mongo. This value is 
+configurable by setting the key:
+
+`mongodb.dbTimeoutMsecs=10000`
+
+Within your application.conf
+
 #### Configure underlying Akka system
 
 ReactiveMongo loads it's configuration from the key `mongo-async-driver`
