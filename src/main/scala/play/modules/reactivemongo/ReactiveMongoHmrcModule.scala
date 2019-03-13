@@ -52,8 +52,11 @@ class ReactiveMongoComponentImpl @Inject()(
 
   lazy val mongoConnector: MongoConnector = MongoConnector(
     mongoConfig.uri,
-    mongoConfig.maybeFailoverStrategy
+    mongoConfig.maybeFailoverStrategy,
+    mongoConfig.dbTimeout
   )
+
+  Logger.debug(s"ReactiveMongoPlugin: MongoConnector configuration being used: $mongoConnector")
 
   lifecycle.addStopHook { () =>
     Future.successful {

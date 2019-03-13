@@ -21,9 +21,12 @@ import reactivemongo.core.nodeset.Authenticate
 import scala.concurrent.{Await, ExecutionContext, Future}
 import reactivemongo.api._
 
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object ReactiveMongoHelper {
+
+  val DEFAULT_DB_TIMEOUT = 10 seconds
 
   @deprecated(message = "Use case class constructor that takes MongoConnectionOptions", "7.0.0")
   def apply(
@@ -46,7 +49,8 @@ case class ReactiveMongoHelper(
   servers: Seq[String],
   auth: Seq[Authenticate],
   failoverStrategy: Option[FailoverStrategy],
-  connectionOptions: MongoConnectionOptions = MongoConnectionOptions()) {
+  connectionOptions: MongoConnectionOptions = MongoConnectionOptions(),
+  dbTimeout: Option[FiniteDuration] = None) {
 
   implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
   lazy val driver                   = new MongoDriver
@@ -57,9 +61,8 @@ case class ReactiveMongoHelper(
     options         = connectionOptions
   )
 
-  import scala.concurrent.duration._
   lazy val db: DefaultDB = failoverStrategy match {
-    case Some(fs: FailoverStrategy) => Await.result(connection.database(dbName, fs), 10 seconds)
-    case None                       => Await.result(connection.database(dbName), 10 seconds)
+    case Some(fs: FailoverStrategy) => Await.result(connection.database(dbName, fs), dbTimeout.getOrElse(ReactiveMongoHelper.DEFAULT_DB_TIMEOUT))
+    case None                       => Await.result(connection.database(dbName), dbTimeout.getOrElse(ReactiveMongoHelper.DEFAULT_DB_TIMEOUT))
   }
 }
