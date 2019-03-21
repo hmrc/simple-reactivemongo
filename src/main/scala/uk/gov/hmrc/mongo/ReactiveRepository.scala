@@ -143,7 +143,7 @@ abstract class ReactiveRepository[A, ID](
     val failures       = docs.collect { case Left(f) => f }
     lazy val successes = docs.collect { case Right(x) => x }
     if (failures.isEmpty) {
-      collection.insert(ordered = false)(implicitly[collection.pack.Writer[JsObject]]).many(successes)
+      collection.insert(ordered = false).many(successes)
     } else {
       Future.failed[MultiBulkWriteResult](new BulkInsertRejected())
     }

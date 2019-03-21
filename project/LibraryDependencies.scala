@@ -8,13 +8,13 @@ object LibraryDependencies {
   val compile: Seq[ModuleID] = PlayCrossCompilation.dependencies(
     shared = Seq(
       "com.github.nscala-time" %% "nscala-time"   % "2.22.0",
-      "org.reactivemongo"      %% "reactivemongo" % "0.16.1"
+      "org.reactivemongo"      %% "reactivemongo" % "0.16.4"
     ),
     play25 = Seq(
       "org.slf4j"         % "slf4j-api"                % "1.7.26",
       "org.slf4j"         % "log4j-over-slf4j"         % "1.7.26",
       "com.typesafe.play" %% "play"                    % play25Version,
-      "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.0-play25",
+      "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.4-play25",
       // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
       "com.fasterxml.jackson.core"     % "jackson-core"            % "2.9.8",
       "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.9.8",
