@@ -29,7 +29,7 @@ object LibraryDependencies {
       "org.slf4j"         % "log4j-over-slf4j"         % "1.7.26",
       "com.typesafe.play" %% "play"                    % play26Version,
       "com.typesafe.play" %% "play-guice"              % play26Version,
-      "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.0-play26"
+      "org.reactivemongo" %% "reactivemongo-play-json" % "0.16.4-play26"
     )
   )
 
