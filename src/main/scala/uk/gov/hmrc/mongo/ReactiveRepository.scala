@@ -22,7 +22,6 @@ import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{DB, ReadPreference}
-import reactivemongo.core.errors.GenericDatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers
 import reactivemongo.play.json.collection.JSONBatchCommands.JSONCountCommand._
 import reactivemongo.play.json.collection.JSONCollection
@@ -157,27 +156,14 @@ abstract class ReactiveRepository[A, ID](
   class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
 
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] =
-    collection.indexesManager
-      .create(index)
-      .map(wr => {
-        if (!wr.ok) {
-          val msg = wr.writeErrors.mkString(", ")
-          val maybeMsg = if (msg.contains("E11000")) {
-            // this is for backwards compatibility to mongodb 2.6.x
-            throw GenericDatabaseException(msg, wr.code)
-          } else Some(msg)
-          logger.error(s"$message (${index.eventualName}) : '${maybeMsg.map(_.toString)}'")
-        }
-        wr.ok
-      })
-      .recover {
-        case t =>
-          logger.error(s"$message (${index.eventualName})", t)
-          false
-      }
+    collection.indexesManager.ensure(index).recover {
+      case t =>
+        logger.error(s"$message (${index.eventualName})", t)
+        false
+    }
 
   def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
-    Future.sequence(indexes.map(ensureIndex))
+    Future.traverse(indexes)(ensureIndex)
 }
 
 sealed abstract class UpdateType[A] {

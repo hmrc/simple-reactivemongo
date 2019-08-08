@@ -198,7 +198,7 @@ class ReactiveRepositorySpec
       a[DatabaseException] should be thrownBy await(repository.insert(shouldNotSave))
     }
 
-    "should not log errors when all are created successfully" in {
+    "not log errors when all are created successfully" in {
       withCaptureOfLoggingFrom[SimpleTestRepository] { logList =>
         await(repository.drop)
         await(repository.ensureIndexes)
@@ -210,7 +210,7 @@ class ReactiveRepositorySpec
       }
     }
 
-    "should log any error when index fails to create" in {
+    "log any error when index fails to create" in {
       withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
         await(uniqueIndexRepository.drop)
 
@@ -223,9 +223,9 @@ class ReactiveRepositorySpec
       }
     }
 
-    "should ignore already applied index" in {
+    "ignore already applied index" in {
       withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
-        await(repository.ensureIndexes) shouldBe Seq(true, true)
+        await(repository.ensureIndexes) shouldBe Seq(false, false)
         logList.size                    should be(0)
       }
 
