@@ -24,9 +24,8 @@ import reactivemongo.api.indexes.Index
 import reactivemongo.api.{DB, ReadPreference}
 import reactivemongo.core.errors.GenericDatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers
-import reactivemongo.play.json.collection.JSONBatchCommands.JSONCountCommand._
 import reactivemongo.play.json.collection.JSONCollection
-import reactivemongo.play.json.commands.JSONFindAndModifyCommand.{FindAndModifyResult, Update}
+import reactivemongo.play.json.commands.JSONFindAndModifyCommand.Update
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.duration.FiniteDuration
@@ -87,7 +86,7 @@ abstract class ReactiveRepository[A, ID](
     writeConcern: WriteConcern        = WriteConcern.Default,
     maxTime: Option[FiniteDuration]   = None,
     collation: Option[Collation]      = None,
-    arrayFilters: Seq[JsObject]       = Nil)(implicit ec: ExecutionContext): Future[FindAndModifyResult] =
+    arrayFilters: Seq[JsObject]       = Nil)(implicit ec: ExecutionContext): Future[FindAndModifyCommand.Result[collection.pack.type]] =
     collection.findAndModify(
       selector                 = query,
       modifier                 = Update(update, fetchNewObject, upsert),
@@ -104,9 +103,7 @@ abstract class ReactiveRepository[A, ID](
 
   def count(query: JsObject, readPreference: ReadPreference = ReadPreference.primary)(
     implicit ec: ExecutionContext): Future[Int] =
-    collection
-      .runCommand(Count(ImplicitlyDocumentProducer.producer(query)), readPreference)
-      .map(_.count)
+    collection.withReadPreference(readPreference).count(Some(query))
 
   def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext): Future[WriteResult] =
     collection.delete(ordered = true, writeConcern).one(Json.obj(), None)
