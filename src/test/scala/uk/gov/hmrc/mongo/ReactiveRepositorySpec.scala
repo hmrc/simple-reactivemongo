@@ -32,10 +32,10 @@ import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
 import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 class ReactiveRepositorySpec
-    extends WordSpec
+  extends WordSpec
     with Matchers
     with MongoSpecSupport
     with BeforeAndAfterEach
@@ -43,7 +43,7 @@ class ReactiveRepositorySpec
     with Eventually
     with LogCapturing {
 
-  val repository            = new SimpleTestRepository
+  val repository = new SimpleTestRepository
   val uniqueIndexRepository = new FailingIndexesTestRepository
 
   override def beforeEach() {
@@ -74,9 +74,9 @@ class ReactiveRepositorySpec
       val e4 = TestObject("4")
 
       val created = for {
-        _           <- repository.insert(e1)
-        _           <- repository.insert(e2)
-        _           <- repository.insert(e3)
+        _ <- repository.insert(e1)
+        _ <- repository.insert(e2)
+        _ <- repository.insert(e3)
         countResult <- repository.count
       } yield countResult
 
@@ -84,9 +84,9 @@ class ReactiveRepositorySpec
 
       val result: List[TestObject] = await(repository.findAll())
       result.size shouldBe 3
-      result      should contain(e1)
-      result      should contain(e2)
-      result      should contain(e3)
+      result should contain(e1)
+      result should contain(e2)
+      result should contain(e3)
 
       result should not contain e4
     }
@@ -119,7 +119,7 @@ class ReactiveRepositorySpec
       await(repository.insert(e1))
 
       val removeResult = await(repository.removeById(e1.id))
-      val inError      = !removeResult.ok || removeResult.code.isDefined
+      val inError = !removeResult.ok || removeResult.code.isDefined
 
       inError shouldBe false
 
@@ -136,7 +136,7 @@ class ReactiveRepositorySpec
       await(repository.insert(e1))
 
       val removeResult = await(repository.remove("anotherField" -> "used to identify"))
-      val inError      = !removeResult.ok || removeResult.code.isDefined
+      val inError = !removeResult.ok || removeResult.code.isDefined
       inError shouldBe false
 
       val result: Option[TestObject] = await(repository.findById(e1.id))
@@ -152,7 +152,7 @@ class ReactiveRepositorySpec
       await(repository.insert(e1))
 
       val removeResult = await(repository.remove("_id" -> e1.id, "anotherField" -> "used to identify"))
-      val inError      = !removeResult.ok || removeResult.code.isDefined
+      val inError = !removeResult.ok || removeResult.code.isDefined
       inError shouldBe false
 
       val result: Option[TestObject] = await(repository.findById(e1.id))
@@ -186,9 +186,9 @@ class ReactiveRepositorySpec
     }
 
     "mean that exceptions are thrown when saving a duplicate record on a unique index" in {
-      val uniqueField      = "i_am_a_unique_field"
+      val uniqueField = "i_am_a_unique_field"
       val saveWithoutError = TestObject(uniqueField)
-      val shouldNotSave    = TestObject(uniqueField)
+      val shouldNotSave = TestObject(uniqueField)
 
       await(repository.drop)
       await(repository.ensureIndexes)
@@ -218,7 +218,7 @@ class ReactiveRepositorySpec
         await(uniqueIndexRepository.insert(TestObject("uniqueKey", Some("whatever"))))
 
         await(uniqueIndexRepository.ensureIndexes) shouldBe Seq(false)
-        logList.size                               should be(1)
+        logList.size should be(1)
         logList.head.getMessage contains s"${uniqueIndexRepository.message} (${uniqueIndexRepository.indexName})"
       }
     }
@@ -226,7 +226,7 @@ class ReactiveRepositorySpec
     "should ignore already applied index" in {
       withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
         await(repository.ensureIndexes) shouldBe Seq(true, true)
-        logList.size                    should be(0)
+        logList.size should be(0)
       }
 
       await(repository.collection.indexesManager.list()).size shouldBe 3
@@ -243,7 +243,7 @@ class ReactiveRepositorySpec
           "key3" -> Json.toJson(42.0),
           "key4" -> Json.toJson(
             Map(
-              "nested-collection"  -> Json.toJson(List(4, 5, 6)),
+              "nested-collection" -> Json.toJson(List(4, 5, 6)),
               "another-value-type" -> Json.toJson(99)
             ))
         ))
@@ -256,7 +256,7 @@ class ReactiveRepositorySpec
 
       val found = await(repository.find("jsValue.key1" -> "top level value"))
 
-      found      should not be empty
+      found should not be empty
       found.size shouldBe 1
 
       found.head.id shouldBe saved.id
@@ -268,7 +268,7 @@ class ReactiveRepositorySpec
       val existingDocuments = List.fill(2)(TestObject(gen[String]))
 
       val chain = for {
-        _     <- repository.bulkInsert(existingDocuments)
+        _ <- repository.bulkInsert(existingDocuments)
         count <- repository.count
       } yield count
 
@@ -276,14 +276,14 @@ class ReactiveRepositorySpec
     }
 
     "consider a subset of documents based on a passed query" in {
-      val now   = LocalDate.now(DateTimeZone.UTC)
+      val now = LocalDate.now(DateTimeZone.UTC)
       val later = now.plusDays(2)
 
-      val currentDocuments = List.fill(2)(TestObject(aField  = gen[String], date = now))
-      val futureDocuments  = List.fill(10)(TestObject(aField = gen[String], date = later))
+      val currentDocuments = List.fill(2)(TestObject(aField = gen[String], date = now))
+      val futureDocuments = List.fill(10)(TestObject(aField = gen[String], date = later))
 
       val chain = for {
-        _     <- repository.bulkInsert(currentDocuments ++ futureDocuments)
+        _ <- repository.bulkInsert(currentDocuments ++ futureDocuments)
         count <- repository.count(Json.obj("date" -> Json.obj("$gt" -> now.plusDays(1))))
       } yield count
 
@@ -296,7 +296,7 @@ class ReactiveRepositorySpec
     "be stored" in {
 
       val coordinates: (Double, Double) = (51.512787, -0.090796)
-      val saved                         = TestObject("storing a tuple2", location = coordinates)
+      val saved = TestObject("storing a tuple2", location = coordinates)
 
       await(repository.insert(saved))
 
@@ -310,17 +310,194 @@ class ReactiveRepositorySpec
   "Bulk insert" should {
     val now = LocalDate.now(DateTimeZone.UTC)
     val objects = Seq(
-      TestObject("firstItem", Some("1"), Some(List(NestedModel("a", "b"))), date  = now),
+      TestObject("firstItem", Some("1"), Some(List(NestedModel("a", "b"))), date = now),
       TestObject("secondItem", Some("2"), Some(List(NestedModel("c", "d"))), date = now.plusDays(1)),
-      TestObject("thirdItem", Some("3"), Some(List(NestedModel("e", "f"))), date  = now.plusDays(2)),
+      TestObject("thirdItem", Some("3"), Some(List(NestedModel("e", "f"))), date = now.plusDays(2)),
       TestObject("fourthItem", Some("4"), Some(List(NestedModel("g", "h"))), date = now.plusDays(3)),
-      TestObject("fifthItem", Some("5"), Some(List(NestedModel("i", "j"))), date  = now.plusDays(4))
+      TestObject("fifthItem", Some("5"), Some(List(NestedModel("i", "j"))), date = now.plusDays(4))
     )
 
     "insert all entities supplied" in {
       await(repository.bulkInsert(objects))
       val result = await(repository.findAll())
       result shouldBe objects
+    }
+  }
+  "Bulk Modify In Batches" should {
+    val now = LocalDate.now(DateTimeZone.UTC)
+    val leftResultString = "foo"
+    val object1 = TestObject("firstItem", Some("1"), Some(List(NestedModel("a", "b"))), date = now)
+    val object2 = TestObject("secondItem", Some("1"), Some(List(NestedModel("a", "b"))), date = now)
+    val object3 = TestObject("thirdItem", Some("1"), Some(List(NestedModel("a", "b"))), date = now)
+    val objects: Seq[TestObject] = Seq(object1, object2)
+    val exception: Exception = new Exception("foo")
+
+    val functionThatReturnsLeft: Seq[TestObject] => Future[Either[String, Seq[TestObject]]] = {
+      (testObjectSeq: Seq[TestObject]) => {
+        Future.successful(Left(leftResultString))
+      }
+    }
+    val functionThatReturnsRight: Seq[TestObject] => Future[Either[String, Seq[TestObject]]] = {
+      (testObjectSeq: Seq[TestObject]) => {
+        Future.successful(Right(testObjectSeq))
+      }
+    }
+
+    val functionThatThrowsException: Seq[TestObject] => Future[Either[String, Seq[TestObject]]] = {
+      (testObjectSeq: Seq[TestObject]) => throw exception
+    }
+
+    val customAccumulationFunction: (Seq[TestObject], Seq[TestObject]) => Seq[TestObject] = (first: Seq[TestObject], second: Seq[TestObject]) => first ++ second
+    val customAccumulationFunctionThatThrowsException: (Seq[TestObject], Seq[TestObject]) => Seq[TestObject] = (first: Seq[TestObject], second: Seq[TestObject]) => throw exception
+
+    s"return $Left if function passed in returns $Left, containing $Left and defaultValue" in {
+      val result = await(repository.bulkModifyInBatches[String, Seq[TestObject]](objects)(
+        functionToExecuteOnChunk = functionThatReturnsLeft,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq.empty[TestObject])
+      )
+      result.left.get shouldBe ((leftResultString, Seq.empty[TestObject]))
+    }
+
+    s"return $Right of the accumulation of all function calls if function passed in returns $Right (recordsBatchSize < Seq passed in)" in {
+      val batchSizeForTest = 1
+      objects.size > batchSizeForTest shouldBe true
+      val result = await(repository.bulkModifyInBatches[String, Seq[TestObject]](objects, recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatReturnsRight,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq.empty[TestObject])
+      )
+      result.right.get shouldBe objects
+    }
+    s"return $Right of the accumulation of all function calls if function passed in returns $Right (recordsBatchSize = Seq passed in)" in {
+      val batchSizeForTest = 2
+      objects.size == batchSizeForTest shouldBe true
+      val result = await(repository.bulkModifyInBatches[String, Seq[TestObject]](objects, recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatReturnsRight,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq.empty[TestObject])
+      )
+      result.right.get shouldBe objects
+    }
+    s"return $Right of the accumulation of all function calls if function passed in returns $Right (recordsBatchSize > Seq in)" in {
+      val batchSizeForTest = 3
+      objects.size < batchSizeForTest shouldBe true
+      val result = await(repository.bulkModifyInBatches[String, Seq[TestObject]](objects, recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatReturnsRight,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq.empty[TestObject])
+      )
+      result.right.get shouldBe objects
+    }
+    s"return $Right of the accumulation of all function calls if function passed in Inserts into mongo & returns $Right (recordsBatchSize < Seq passed in)" in {
+      val batchSizeForTest = 1
+      val functionThatActuallyInsertsIntoMongoAndReturnsRight: Seq[TestObject] => Future[Either[String, Seq[TestObject]]] = {
+        (testObjectSeq: Seq[TestObject]) => {
+          for {
+            preInsertionCount <- repository.count
+            insertedOne <- repository.bulkInsert(testObjectSeq)
+            count <- repository.count
+          } yield {
+            count shouldBe preInsertionCount + batchSizeForTest
+            Right(testObjectSeq)
+          }
+        }
+      }
+
+      objects.size > batchSizeForTest shouldBe true
+      val result = await(repository.bulkModifyInBatches[String, Seq[TestObject]](objects, recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatActuallyInsertsIntoMongoAndReturnsRight,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq.empty[TestObject])
+      )
+      result.right.get shouldBe objects
+      await(repository.count) shouldBe objects.size
+    }
+    s"return $Right of the accumulation of all function calls if function passed in Inserts into mongo & returns $Right (recordsBatchSize > Seq passed in)" in {
+      val batchSizeForTest = 3
+      val functionThatActuallyInsertsIntoMongoAndReturnsRight: Seq[TestObject] => Future[Either[String, Seq[TestObject]]] = {
+        (testObjectSeq: Seq[TestObject]) => {
+          for {
+            preInsertionCount <- repository.count
+            insertedOne <- repository.bulkInsert(testObjectSeq)
+            count <- repository.count
+          } yield {
+            count shouldBe preInsertionCount + objects.size
+            Right(testObjectSeq)
+          }
+        }
+      }
+
+      objects.size < batchSizeForTest shouldBe true
+      val result = await(repository.bulkModifyInBatches[String, Seq[TestObject]](objects, recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatActuallyInsertsIntoMongoAndReturnsRight,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq.empty[TestObject])
+      )
+      result.right.get shouldBe objects
+      await(repository.count) shouldBe objects.size
+    }
+    s"return $Right if Empty Seq passed in" in {
+      val batchSizeForTest = 1
+      val result = await(repository.bulkModifyInBatches[String, Seq[TestObject]](Seq.empty[TestObject], recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatReturnsLeft,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq.empty[TestObject])
+      )
+      result.right.get shouldBe Seq.empty
+    }
+    s"return $Right if Empty Seq passed in AND defaultValue != Empty Seq" in {
+      val batchSizeForTest = 1
+      val result = await(repository.bulkModifyInBatches[String, Seq[TestObject]](Seq.empty[TestObject], recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatReturnsLeft,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq(object1))
+      )
+      result.right.get shouldBe Seq(object1)
+      await(repository.count) shouldBe 0
+    }
+    s"throw Exception if functionToExecuteOnChunk throws Exception" in {
+      val batchSizeForTest = 9999
+
+      val result = intercept[Exception](await(repository.bulkModifyInBatches[String, Seq[TestObject]](objects, recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatThrowsException,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq(object1))
+      ))
+      result.getMessage shouldBe exception.getMessage
+    }
+    s"throw Exception if functionToAccumulateRightIfSuccess throws Exception" in {
+      val batchSizeForTest = 9999
+
+      val result = intercept[Exception](await(repository.bulkModifyInBatches[String, Seq[TestObject]](objects, recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatReturnsRight,
+        functionToAccumulateRightIfSuccess = customAccumulationFunctionThatThrowsException,
+        defaultValue = Seq(object1))
+      ))
+      result.getMessage shouldBe exception.getMessage
+    }
+    s"Return $Left with (Fail, AccumulatedResults) inside when two batches succeeds but the third fails" in {
+      val batchSizeForTest = 1
+
+      var counter: Int = 0
+      val functionThatReturnsRightAfter2IterationsButLeftOnThird: Seq[TestObject] => Future[Either[String, Seq[TestObject]]] = {
+        (testObjectSeq: Seq[TestObject]) => {
+          if (counter != 2) {
+            counter = counter + 1
+            testObjectSeq.size shouldBe 1
+            Future.successful(Right(testObjectSeq))
+          } else {
+            Future.successful(Left(leftResultString))
+          }
+        }
+      }
+
+      val result = await(repository.bulkModifyInBatches[String, Seq[TestObject]](objects ++ Seq(object3), recordsBatchSize = batchSizeForTest)(
+        functionToExecuteOnChunk = functionThatReturnsRightAfter2IterationsButLeftOnThird,
+        functionToAccumulateRightIfSuccess = customAccumulationFunction,
+        defaultValue = Seq.empty[TestObject])
+      )
+      result.left.get shouldBe ((leftResultString, objects))
     }
   }
 }
@@ -349,15 +526,15 @@ trait LogCapturing {
 case class NestedModel(a: String, b: String)
 
 case class TestObject(
-  aField: String,
-  anotherField: Option[String]                                             = None,
-  optionalCollection: Option[List[NestedModel]]                            = None,
-  nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
-  modifiedDetails: CreationAndLastModifiedDetail                           = CreationAndLastModifiedDetail(),
-  jsValue: Option[JsValue]                                                 = None,
-  location: (Double, Double)                                               = (0.0, 0.0),
-  date: LocalDate                                                          = LocalDate.now(DateTimeZone.UTC),
-  id: BSONObjectID                                                         = BSONObjectID.generate) {
+                       aField: String,
+                       anotherField: Option[String] = None,
+                       optionalCollection: Option[List[NestedModel]] = None,
+                       nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
+                       modifiedDetails: CreationAndLastModifiedDetail = CreationAndLastModifiedDetail(),
+                       jsValue: Option[JsValue] = None,
+                       location: (Double, Double) = (0.0, 0.0),
+                       date: LocalDate = LocalDate.now(DateTimeZone.UTC),
+                       id: BSONObjectID = BSONObjectID.generate) {
 
   def markUpdated(implicit updatedTime: DateTime): TestObject = copy(
     modifiedDetails = modifiedDetails.updated(updatedTime)
@@ -373,24 +550,24 @@ object TestObject {
 }
 
 class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
-    extends ReactiveRepository[TestObject, BSONObjectID](
-      collectionName = "simpleTestRepository",
-      mongo          = mc.db,
-      domainFormat   = TestObject.formats,
-      idFormat       = ReactiveMongoFormats.objectIdFormats) {
+  extends ReactiveRepository[TestObject, BSONObjectID](
+    collectionName = "simpleTestRepository",
+    mongo = mc.db,
+    domainFormat = TestObject.formats,
+    idFormat = ReactiveMongoFormats.objectIdFormats) {
 
   override def indexes = Seq(
-    Index(Seq("aField"       -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true),
+    Index(Seq("aField" -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true),
     Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex"))
   )
 }
 
 class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
-    extends ReactiveRepository[TestObject, BSONObjectID](
-      "failingIndexesTestRepository",
-      mc.db,
-      TestObject.formats,
-      ReactiveMongoFormats.objectIdFormats) {
+  extends ReactiveRepository[TestObject, BSONObjectID](
+    "failingIndexesTestRepository",
+    mc.db,
+    TestObject.formats,
+    ReactiveMongoFormats.objectIdFormats) {
 
   def indexName = "index1"
 

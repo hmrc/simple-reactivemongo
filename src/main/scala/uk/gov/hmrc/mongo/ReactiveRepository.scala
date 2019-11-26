@@ -34,11 +34,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
 
 abstract class ReactiveRepository[A, ID](
-  protected[mongo] val collectionName: String,
-  protected[mongo] val mongo: () => DB,
-  domainFormat: Format[A],
-  idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats)
-    extends Indexes
+                                          protected[mongo] val collectionName: String,
+                                          protected[mongo] val mongo: () => DB,
+                                          domainFormat: Format[A],
+                                          idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats)
+  extends Indexes
     with MongoDb
     with CollectionName
     with CurrentTime {
@@ -47,16 +47,19 @@ abstract class ReactiveRepository[A, ID](
   import play.api.libs.json.Json.JsValueWrapper
 
   implicit val domainFormatImplicit: Format[A] = domainFormat
-  implicit val idFormatImplicit: Format[ID]    = idFormat
+  implicit val idFormatImplicit: Format[ID] = idFormat
 
   lazy val collection: JSONCollection = mongo().collection[JSONCollection](collectionName)
 
   protected[this] val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  val message: String                = "Failed to ensure index"
+  val message: String = "Failed to ensure index"
+  val batchSize: Int = 5000
+
 
   ensureIndexes(scala.concurrent.ExecutionContext.Implicits.global)
 
-  protected val _Id                   = "_id"
+  protected val _Id = "_id"
+
   protected def _id(id: ID): JsObject = Json.obj(_Id -> id)
 
   def find(query: (String, JsValueWrapper)*)(implicit ec: ExecutionContext): Future[List[A]] =
@@ -77,27 +80,27 @@ abstract class ReactiveRepository[A, ID](
     collection.find(_id(id)).one[A](readPreference)
 
   def findAndUpdate(
-    query: JsObject,
-    update: JsObject,
-    fetchNewObject: Boolean           = false,
-    upsert: Boolean                   = false,
-    sort: Option[JsObject]            = None,
-    fields: Option[JsObject]          = None,
-    bypassDocumentValidation: Boolean = false,
-    writeConcern: WriteConcern        = WriteConcern.Default,
-    maxTime: Option[FiniteDuration]   = None,
-    collation: Option[Collation]      = None,
-    arrayFilters: Seq[JsObject]       = Nil)(implicit ec: ExecutionContext): Future[FindAndModifyResult] =
+                     query: JsObject,
+                     update: JsObject,
+                     fetchNewObject: Boolean = false,
+                     upsert: Boolean = false,
+                     sort: Option[JsObject] = None,
+                     fields: Option[JsObject] = None,
+                     bypassDocumentValidation: Boolean = false,
+                     writeConcern: WriteConcern = WriteConcern.Default,
+                     maxTime: Option[FiniteDuration] = None,
+                     collation: Option[Collation] = None,
+                     arrayFilters: Seq[JsObject] = Nil)(implicit ec: ExecutionContext): Future[FindAndModifyResult] =
     collection.findAndModify(
-      selector                 = query,
-      modifier                 = Update(update, fetchNewObject, upsert),
-      sort                     = sort,
-      fields                   = fields,
+      selector = query,
+      modifier = Update(update, fetchNewObject, upsert),
+      sort = sort,
+      fields = fields,
       bypassDocumentValidation = bypassDocumentValidation,
-      writeConcern             = writeConcern,
-      maxTime                  = maxTime,
-      collation                = collation,
-      arrayFilters             = arrayFilters
+      writeConcern = writeConcern,
+      maxTime = maxTime,
+      collation = collation,
+      arrayFilters = arrayFilters
     )
 
   def count(implicit ec: ExecutionContext): Future[Int] = count(Json.obj())
@@ -123,15 +126,15 @@ abstract class ReactiveRepository[A, ID](
       .drop(failIfNotFound = true)
       .map(_ => true)
       .recover[Boolean] {
-        case _ => false
-      }
+      case _ => false
+    }
 
   @deprecated("use ReactiveRepository#insert() instead", "3.0.1")
   def save(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] = insert(entity)
 
   def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] =
     domainFormat.writes(entity) match {
-      case d @ JsObject(_) => collection.insert(d)
+      case d@JsObject(_) => collection.insert(d)
       case _ =>
         Future.failed[WriteResult](new Exception("cannot write object") with NoStackTrace)
     }
@@ -139,8 +142,8 @@ abstract class ReactiveRepository[A, ID](
   def bulkInsert(entities: Seq[A])(
     implicit ec: ExecutionContext
   ): Future[MultiBulkWriteResult] = {
-    val docs           = entities.map(toJsObject)
-    val failures       = docs.collect { case Left(f) => f }
+    val docs = entities.map(toJsObject)
+    val failures = docs.collect { case Left(f) => f }
     lazy val successes = docs.collect { case Right(x) => x }
     if (failures.isEmpty) {
       collection.insert(ordered = false).many(successes)
@@ -149,9 +152,41 @@ abstract class ReactiveRepository[A, ID](
     }
   }
 
+  def bulkModifyInBatches[F, B](records: Seq[A],
+                                recordsBatchSize: Int = batchSize)(
+                                 functionToExecuteOnChunk: Seq[A] => Future[Either[F, B]],
+                                 functionToAccumulateRightIfSuccess: (B, B) => B,
+                                 defaultValue: B)(
+                                 implicit ec: ExecutionContext): Future[Either[(F, B), B]] = {
+
+    def handleThisBatchResult(previousResult: B, thisResult: Either[F, B])
+                             (functionToAccumulateRightIfSuccess: (B, B) => B): Either[(F, B), B] = {
+      thisResult.fold(
+        fail => Left((fail, previousResult)),
+        success => Right(functionToAccumulateRightIfSuccess(previousResult, success))
+      )
+    }
+
+    records.grouped(recordsBatchSize)
+      .foldLeft(Future.successful[Either[(F, B), B]](Right(defaultValue)))(
+        (previousBatch, thisBatch) => {
+          previousBatch.flatMap {
+            previousResult => {
+              if (previousResult.isRight) {
+                functionToExecuteOnChunk(thisBatch).map(thisBatchResult =>
+                  handleThisBatchResult(previousResult.right.get, thisBatchResult)(functionToAccumulateRightIfSuccess))
+              } else {
+                Future.successful(previousResult)
+              }
+            }
+          }
+        })
+  }
+
+
   private def toJsObject(entity: A) = domainFormat.writes(entity) match {
     case j: JsObject => Right(j)
-    case _           => Left(entity)
+    case _ => Left(entity)
   }
 
   class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
