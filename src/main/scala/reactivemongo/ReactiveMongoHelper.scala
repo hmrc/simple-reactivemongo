@@ -61,7 +61,7 @@ case class ReactiveMongoHelper(
     options         = connectionOptions
   )
 
-  lazy val db: DefaultDB = failoverStrategy match {
+  def db: DefaultDB = failoverStrategy match {
     case Some(fs: FailoverStrategy) => Await.result(connection.database(dbName, fs), dbTimeout.getOrElse(ReactiveMongoHelper.DEFAULT_DB_TIMEOUT))
     case None                       => Await.result(connection.database(dbName), dbTimeout.getOrElse(ReactiveMongoHelper.DEFAULT_DB_TIMEOUT))
   }

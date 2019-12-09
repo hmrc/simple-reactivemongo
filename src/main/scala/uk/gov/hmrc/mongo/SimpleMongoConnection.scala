@@ -33,11 +33,7 @@ trait SimpleMongoConnection {
   val failoverStrategy: Option[FailoverStrategy]
   val dbTimeout: Option[FiniteDuration]
 
-  implicit def db: () => DefaultDB = () => mongoDb
-
-  private lazy val mongoDb = connect
-
-  private def connect = helper.db
+  implicit def db: () => DefaultDB = () => helper.db
 
   lazy val helper: ReactiveMongoHelper = MongoConnection.parseURI(mongoConnectionUri) match {
     case Success(MongoConnection.ParsedURI(hosts, options, ignoreOptions, Some(db), auth)) =>

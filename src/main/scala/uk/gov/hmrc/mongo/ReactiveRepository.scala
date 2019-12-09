@@ -49,7 +49,7 @@ abstract class ReactiveRepository[A, ID](
   implicit val domainFormatImplicit: Format[A] = domainFormat
   implicit val idFormatImplicit: Format[ID]    = idFormat
 
-  lazy val collection: JSONCollection = mongo().collection[JSONCollection](collectionName)
+  def collection: JSONCollection = mongo().collection[JSONCollection](collectionName)
 
   protected[this] val logger: Logger = LoggerFactory.getLogger(this.getClass)
   val message: String                = "Failed to ensure index"
