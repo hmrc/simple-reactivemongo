@@ -21,7 +21,7 @@ import play.api.libs.json.{Format, JsObject, Json}
 import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
-import reactivemongo.api.{DB, ReadPreference}
+import reactivemongo.api.{DB, ReadConcern, ReadPreference}
 import reactivemongo.core.errors.GenericDatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers
 import reactivemongo.play.json.collection.JSONCollection
@@ -99,11 +99,18 @@ abstract class ReactiveRepository[A, ID](
       arrayFilters             = arrayFilters
     )
 
-  def count(implicit ec: ExecutionContext): Future[Int] = count(Json.obj())
+  def count(implicit ec: ExecutionContext): Future[Int] = count(None, ReadPreference.primary)
 
   def count(query: JsObject, readPreference: ReadPreference = ReadPreference.primary)(
+    implicit ec: ExecutionContext): Future[Int] = count(Some(query), readPreference)
+
+  private def count(query: Option[JsObject], readPreference: ReadPreference)(
     implicit ec: ExecutionContext): Future[Int] =
-    collection.withReadPreference(readPreference).count(Some(query))
+    collection.withReadPreference(readPreference).count(selector = query,
+      limit = None,
+      skip = 0,
+      hint =  None,
+      readConcern = ReadConcern.Available).map(_.toInt)
 
   def removeAll(writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext): Future[WriteResult] =
     collection.delete(ordered = true, writeConcern).one(Json.obj(), None)
@@ -128,7 +135,7 @@ abstract class ReactiveRepository[A, ID](
 
   def insert(entity: A)(implicit ec: ExecutionContext): Future[WriteResult] =
     domainFormat.writes(entity) match {
-      case d @ JsObject(_) => collection.insert(d)
+      case d @ JsObject(_) => collection.insert(false).one(d)
       case _ =>
         Future.failed[WriteResult](new Exception("cannot write object") with NoStackTrace)
     }
