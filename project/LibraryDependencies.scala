@@ -8,7 +8,10 @@ object LibraryDependencies {
   val compile: Seq[ModuleID] = PlayCrossCompilation.dependencies(
     shared = Seq(
       "com.github.nscala-time" %% "nscala-time"   % "2.22.0",
-      "org.reactivemongo"      %% "reactivemongo" % "0.18.8"
+      "org.reactivemongo"      %% "reactivemongo" % "0.18.8",
+      // force commons-codec to avoid 1.13 and 1.14 until 1.15 is available
+      // see JIRA ticket BDOG-612
+      "commons-codec"          %  "commons-codec" % "1.12" force()
     ),
     play25 = Seq(
       "org.slf4j"         % "slf4j-api"                % "1.7.26",
