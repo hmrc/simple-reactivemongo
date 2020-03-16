@@ -18,11 +18,10 @@ package reactivemongo
 
 import reactivemongo.core.nodeset.Authenticate
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext}
 import reactivemongo.api._
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object ReactiveMongoHelper {
 

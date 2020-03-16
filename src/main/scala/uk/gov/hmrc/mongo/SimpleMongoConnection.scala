@@ -19,7 +19,6 @@ package uk.gov.hmrc.mongo
 import reactivemongo.api.FailoverStrategy
 
 import scala.concurrent.duration.FiniteDuration
-import scala.language.postfixOps
 
 trait SimpleMongoConnection {
 
