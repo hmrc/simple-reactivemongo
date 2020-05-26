@@ -1,7 +1,7 @@
 
 # simple-reactivemongo
 
-[![Join the chat at https://gitter.im/hmrc/simple-reactivemongo](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/hmrc/simple-reactivemongo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Apache-2.0 license](http://img.shields.io/badge/license-Apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html) [![Build Status](https://travis-ci.org/hmrc/simple-reactivemongo.svg)](https://travis-ci.org/hmrc/simple-reactivemongo) [ ![Download](https://api.bintray.com/packages/hmrc/releases/simple-reactivemongo/images/download.svg) ](https://bintray.com/hmrc/releases/simple-reactivemongo/_latestVersion) [![Stories in Ready](https://badge.waffle.io/hmrc/simple-reactivemongo.png?label=ready&title=Ready)](https://waffle.io/hmrc/simple-reactivemongo)
+[![Apache-2.0 license](http://img.shields.io/badge/license-Apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html) [![Build Status](https://travis-ci.org/hmrc/simple-reactivemongo.svg)](https://travis-ci.org/hmrc/simple-reactivemongo) [ ![Download](https://api.bintray.com/packages/hmrc/releases/simple-reactivemongo/images/download.svg) ](https://bintray.com/hmrc/releases/simple-reactivemongo/_latestVersion)
 
 Provides simple serialization for [ReactiveMongo](http://reactivemongo.org) - reactive, asynchronous and non-blocking Scala driver for MongoDB.
 
@@ -167,12 +167,26 @@ Formats for BSONObjectId and Joda time classes are implemented (see [ReactiveMon
 
 #### Configuration Options
 
-There is a default timeout of 10 seconds when making connections with Mongo. This value is 
-configurable by setting the key:
+There is a default timeout of 10 seconds when making connections with Mongo. This value is configurable by setting the key within your `application.conf`:
 
 `mongodb.dbTimeoutMsecs=10000`
 
-Within your application.conf
+This library also allows setting of a [FailoverStrategy](http://reactivemongo.org/releases/0.11/documentation/advanced-topics/failoverstrategy.html) via configuration, which defines if (and how) database operation should be retried if ReactiveMongo can't communicate with the cluster.
+
+For example, this is the default failover strategy enabled by ReactiveMongo. It retries 10 times at these intervals: 125ms, 250ms, 375ms, 500ms, 625ms, 750ms, 875ms, 1s, 1125ms, 1250ms
+
+```
+mongodb.failoverStrategy {
+  retries = 10
+  initialDelayMsecs = 100
+  delay {
+    factor = 1.25
+    function = linear
+  }
+}
+```
+
+The delay block has been introduced by this library. `factor` should be a Double, and `function` should be one of `linear`, `static`, `exponential`, or `fibonacci`. For the function definitions, please refer to the code in [the DelayFactor object](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/play/modules/reactivemongo/MongoConfig.scala#L74).
 
 #### Configure underlying Akka system
 
