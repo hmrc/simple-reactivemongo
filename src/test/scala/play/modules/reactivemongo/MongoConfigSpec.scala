@@ -108,17 +108,26 @@ class MongoConfigSpec extends WordSpec with MockFactory with PropertyChecks {
         val dbTimeout = mongoConfig(s"$mongodbConfigKey.dbTimeoutMsecs" -> dbTimeoutMsecs).dbTimeout
         dbTimeout shouldBe Some(new FiniteDuration(dbTimeoutMsecs, MILLISECONDS))
       }
+
+      s"return None for 'defaultHeartbeatFrequencyMS' if '$mongodbConfigKey.heartbeatFrequency' not present in config" in new Setup {
+        mongoConfig(mongodbConfigKey -> Map.empty).defaultHeartbeatFrequencyMS shouldBe None
+      }
+
+      s"override 'defaultHeartbeatFrequencyMS' if specified under '$mongodbConfigKey.defaultHeartbeatFrequencyMS'" in new Setup {
+        val value = mongoConfig(s"$mongodbConfigKey.defaultHeartbeatFrequencyMS" -> defaultHeartbeatFrequencyMS).defaultHeartbeatFrequencyMS
+        value shouldBe Some(defaultHeartbeatFrequencyMS)
+      }
     }
   }
 
   private trait Setup {
-    private val delayFactorFinder = mockFunction[Option[Configuration], Int => Double]
-    val delayFunction             = mockFunction[Int, Double]
-    val uri                       = "mongouri"
-    val channels                  = 1
-    val initialDelayMsecs         = 1234
-    val dbTimeoutMsecs            = 1234
-    val retries                   = 5
+    private val delayFactorFinder   = mockFunction[Option[Configuration], Int => Double]
+    val delayFunction               = mockFunction[Int, Double]
+    val uri                         = "mongouri"
+    val initialDelayMsecs           = 1234
+    val dbTimeoutMsecs              = 1234
+    val retries                     = 5
+    val defaultHeartbeatFrequencyMS = 4000
 
     def mongoConfig(configEntries: (String, Any)*): MongoConfig =
       new MongoConfig(environment, Configuration(configEntries: _*), delayFactorFinder)

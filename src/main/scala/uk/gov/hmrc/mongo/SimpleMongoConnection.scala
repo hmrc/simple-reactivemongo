@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.mongo
 
-import reactivemongo.api.FailoverStrategy
+import reactivemongo.api.{FailoverStrategy, MongoConnectionOptions}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -31,6 +31,7 @@ trait SimpleMongoConnection {
   val mongoConnectionUri: String
   val failoverStrategy: Option[FailoverStrategy]
   val dbTimeout: Option[FiniteDuration]
+  val defaultHeartbeatFrequencyMS: Option[Int]
 
   implicit def db: () => DefaultDB = () => mongoDb
 
@@ -40,10 +41,24 @@ trait SimpleMongoConnection {
 
   lazy val helper: ReactiveMongoHelper = MongoConnection.parseURI(mongoConnectionUri) match {
     case Success(MongoConnection.ParsedURI(hosts, options, ignoreOptions, Some(db), auth)) =>
-      ReactiveMongoHelper(db, hosts.map(h => h._1 + ":" + h._2), auth.toList, failoverStrategy, options, dbTimeout)
+      val modifiedOptions = overrideDefaultHeartbeatFrequencyMS(options)
+      ReactiveMongoHelper(db, hosts.map(h => h._1 + ":" + h._2), auth.toList, failoverStrategy, modifiedOptions, dbTimeout)
+
     case Success(MongoConnection.ParsedURI(_, _, _, None, _)) =>
       throw new Exception(s"Missing database name in mongodb.uri '$mongoConnectionUri'")
+
     case Failure(e) => throw new Exception(s"Invalid mongodb.uri '$mongoConnectionUri'", e)
+  }
+
+  private def overrideDefaultHeartbeatFrequencyMS(options: MongoConnectionOptions) = {
+    def uriContainsKey: Boolean = mongoConnectionUri.contains("heartbeatFrequencyMS") || mongoConnectionUri.contains("rm.monitorRefreshMS")
+
+    defaultHeartbeatFrequencyMS match {
+      case Some(freq) if !uriContainsKey =>
+        options.copy(heartbeatFrequencyMS = freq)
+      case _ =>
+        options
+    }
   }
 
   def close() {
@@ -53,5 +68,8 @@ trait SimpleMongoConnection {
 
 }
 
-case class MongoConnector(mongoConnectionUri: String, failoverStrategy: Option[FailoverStrategy] = None, dbTimeout: Option[FiniteDuration] = None)
+case class MongoConnector(mongoConnectionUri: String,
+                          failoverStrategy: Option[FailoverStrategy] = None,
+                          dbTimeout: Option[FiniteDuration] = None,
+                          defaultHeartbeatFrequencyMS: Option[Int] = None)
     extends SimpleMongoConnection

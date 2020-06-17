@@ -40,9 +40,12 @@ class DelayFactorSpec extends WordSpec with Matchers {
     }
 
     "return linear value" in {
-      val conf = Some(Configuration.from(Map("factor" -> 2.0, "function" -> "linear")))
+      val delay = DelayFactor(Some(Configuration.from(Map("factor" -> 1.25, "function" -> "linear"))))
+      val expected = Vector(1.25, 2.5, 3.75, 5.0, 6.25, 7.5, 8.75, 10.0, 11.25, 12.5)
 
-      DelayFactor(conf).apply(1) shouldBe 2.0
+      val results = 1 to 10 map delay
+
+      results shouldBe expected
     }
 
     "return exponential value" in {
@@ -52,7 +55,12 @@ class DelayFactorSpec extends WordSpec with Matchers {
     }
 
     "return fibonacci value" in {
-      pending
+      val delay = DelayFactor(Some(Configuration.from(Map("factor" -> 1.0, "function" -> "fibonacci"))))
+      val expected = Vector(0.0, 1.0, 1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 21.0, 34.0)
+
+      val results = 1 to 10 map delay
+
+      results shouldBe expected
     }
 
     "fail for unknown function" in {

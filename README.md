@@ -188,6 +188,8 @@ mongodb.failoverStrategy {
 
 The delay block has been introduced by this library. `factor` should be a Double, and `function` should be one of `linear`, `static`, `exponential`, or `fibonacci`. For the function definitions, please refer to the code in [the DelayFactor object](https://github.com/hmrc/simple-reactivemongo/blob/master/src/main/scala/play/modules/reactivemongo/MongoConfig.scala#L74).
 
+`mongodb.defaultHeartbeatFrequencyMS` allows setting of the connection string property of the same name. If both are set, the connection string property takes precedence.
+
 #### Configure underlying Akka system
 
 ReactiveMongo loads it's configuration from the key `mongo-async-driver`
