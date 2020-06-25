@@ -17,6 +17,7 @@
 package uk.gov.hmrc.mongo
 
 import org.scalatest.{Matchers, WordSpec}
+import reactivemongo.api.MongoConnectionOptions
 
 /**
   *
@@ -24,14 +25,52 @@ import org.scalatest.{Matchers, WordSpec}
   */
 class MongoConnectorSpec extends WordSpec with Matchers {
 
+  private val defaultHeartbeatFrequencyMS: Int = MongoConnectionOptions.default.heartbeatFrequencyMS
+
   "MongoConnector" should {
     "create a Mongo connection with the given options" in {
-
       val connector = MongoConnector(
         "mongodb://127.0.0.1:27017/test?connectTimeoutMS=1000&socketTimeoutMS=2000",
         failoverStrategy = None)
 
       connector.db().connection.options.connectTimeoutMS shouldBe 1000
+    }
+
+    "set heartbeatFrequencyMS with provided default" in {
+      val connector = MongoConnector(
+        s"mongodb://127.0.0.1:27017/test",
+        defaultHeartbeatFrequencyMS = Some(4000)
+      )
+
+      connector.db().connection.options.heartbeatFrequencyMS shouldBe 4000
+    }
+
+    "use connection string heartbeatFrequencyMS if it exists" in {
+      val connector = MongoConnector(
+        s"mongodb://127.0.0.1:27017/test?heartbeatFrequencyMS=4000",
+        defaultHeartbeatFrequencyMS = Some(5000)
+      )
+
+      connector.db().connection.options.heartbeatFrequencyMS shouldBe 4000
+    }
+
+    "use the deprecated 'rm.monitorRefreshMS' in connection string if it exists" in {
+      val connector = MongoConnector(
+        s"mongodb://127.0.0.1:27017/test?rm.monitorRefreshMS=4000",
+        defaultHeartbeatFrequencyMS = Some(5000)
+      )
+
+      connector.db().connection.options.heartbeatFrequencyMS shouldBe 4000
+    }
+
+    "fallback to default if neither option set" in {
+      val value = defaultHeartbeatFrequencyMS
+      val connector = MongoConnector(
+        s"mongodb://127.0.0.1:27017/test",
+        defaultHeartbeatFrequencyMS = None
+      )
+
+      connector.db().connection.options.heartbeatFrequencyMS shouldBe value
     }
   }
 }

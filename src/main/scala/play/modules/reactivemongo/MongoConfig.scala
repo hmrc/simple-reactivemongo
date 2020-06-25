@@ -62,6 +62,9 @@ class MongoConfig(
     mongoConfig.getOptional[Long]("dbTimeoutMsecs")
         .map(dbTimeout => new FiniteDuration(dbTimeout, TimeUnit.MILLISECONDS))
 
+  lazy val defaultHeartbeatFrequencyMS: Option[Int] =
+    mongoConfig.getOptional[Int]("defaultHeartbeatFrequencyMS")
+
   private lazy val mongoConfig: Configuration = configuration
     .getOptional[Configuration]("mongodb")
     .orElse(configuration.getOptional[Configuration](s"${environment.mode}.mongodb"))

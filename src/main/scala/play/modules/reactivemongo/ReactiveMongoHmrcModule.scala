@@ -61,7 +61,8 @@ class ReactiveMongoComponentImpl @Inject()(
     MongoConnector(
       mongoConfig.uri,
       mongoConfig.maybeFailoverStrategy,
-      mongoConfig.dbTimeout
+      mongoConfig.dbTimeout,
+      mongoConfig.defaultHeartbeatFrequencyMS
     )
 
   }
