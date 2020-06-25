@@ -4,6 +4,7 @@ val libName = "simple-reactivemongo"
 
 lazy val simpleReactiveMongo = Project(libName, file("."))
   .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
+  .disablePlugins(JUnitXmlReportPlugin)
   .settings(
     makePublicallyAvailableOnBintray := true,
     majorVersion                     := 7
