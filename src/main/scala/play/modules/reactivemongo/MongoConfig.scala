@@ -64,6 +64,7 @@ class MongoConfig(
 
   lazy val defaultHeartbeatFrequencyMS: Option[Int] =
     mongoConfig.getOptional[Int]("defaultHeartbeatFrequencyMS")
+      .orElse(configuration.getOptional[Int]("platform.mongodb.defaultHeartbeatFrequencyMS")) // see BDOG-910 comments
 
   private lazy val mongoConfig: Configuration = configuration
     .getOptional[Configuration]("mongodb")
