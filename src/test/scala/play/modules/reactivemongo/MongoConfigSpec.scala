@@ -117,6 +117,18 @@ class MongoConfigSpec extends WordSpec with MockFactory with PropertyChecks {
         val value = mongoConfig(s"$mongodbConfigKey.defaultHeartbeatFrequencyMS" -> defaultHeartbeatFrequencyMS).defaultHeartbeatFrequencyMS
         value shouldBe Some(defaultHeartbeatFrequencyMS)
       }
+
+      s"ignore 'platform.mongodb.defaultHeartbeatFrequencyMS' if $mongodbConfigKey.defaultHeartbeatFrequencyMS specified" in new Setup {
+        val defaultValue = 999
+        val value = mongoConfig("platform.mongodb.defaultHeartbeatFrequencyMS" -> defaultValue, s"$mongodbConfigKey.defaultHeartbeatFrequencyMS" -> defaultHeartbeatFrequencyMS).defaultHeartbeatFrequencyMS
+        value shouldBe Some(defaultHeartbeatFrequencyMS)
+      }
+
+      s"fallback to 'platform.mongodb.defaultHeartbeatFrequencyMS' if $mongodbConfigKey.defaultHeartbeatFrequencyMS not specified" in new Setup {
+        val defaultValue = 999
+        val value = mongoConfig("platform.mongodb.defaultHeartbeatFrequencyMS" -> defaultValue, s"$mongodbConfigKey.uri" -> "something").defaultHeartbeatFrequencyMS
+        value shouldBe Some(defaultValue)
+      }
     }
   }
 
