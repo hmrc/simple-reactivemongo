@@ -16,14 +16,13 @@
 
 package uk.gov.hmrc.mongo.json
 
+import play.api.libs.json.{Format, JsArray, JsError, JsPath, Reads, Writes}
 import reactivemongo.play.json.ValidationError
 
 /**
   * Thanks goes to Alexander Jarvis for his Gist (https://gist.github.com/alexanderjarvis/4595298)
   */
 trait TupleFormats {
-  import play.api.libs.json._
-
   implicit def tuple2Reads[B, T1, T2](c: (T1, T2) => B)(implicit aReads: Reads[T1], bReads: Reads[T2]): Reads[B] =
     Reads[B] {
       case JsArray(arr) if arr.size == 2 =>

@@ -18,7 +18,6 @@ package uk.gov.hmrc.mongo
 
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.Json
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 case class CreationAndLastModifiedDetail(
   createdAt: DateTime   = DateTime.now.withZone(DateTimeZone.UTC),
@@ -30,7 +29,7 @@ case class CreationAndLastModifiedDetail(
 }
 
 object CreationAndLastModifiedDetail {
-  import ReactiveMongoFormats.{dateTimeRead, dateTimeWrite}
+  import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.{dateTimeRead, dateTimeWrite}
   implicit val formats = Json.format[CreationAndLastModifiedDetail]
 
   def withTime(time: DateTime) = new CreationAndLastModifiedDetail(

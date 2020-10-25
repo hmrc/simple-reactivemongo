@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.mongo.json
 
-object JsonExtensions {
+import play.api.libs.json.{JsPath, JsValue, __}
 
-  import play.api.libs.json._
+object JsonExtensions {
 
   def copyKey(fromPath: JsPath, toPath: JsPath) = __.json.update(toPath.json.copyFrom(fromPath.json.pick))
   def moveKey(fromPath: JsPath, toPath: JsPath) =

@@ -26,7 +26,7 @@ import play.api.Configuration
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import reactivemongo.api.DefaultDB
-import reactivemongo.play.json.ImplicitBSONHandlers._
+import reactivemongo.play.json.compat._
 import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.ExecutionContext.Implicits.global

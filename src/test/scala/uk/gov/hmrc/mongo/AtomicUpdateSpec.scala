@@ -259,7 +259,29 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       with AtomicUpdate[AtomicTestObject] {
 
     override def indexes = Seq(
-      Index(Seq("name" -> IndexType.Ascending), name = Some("aNameUniqueIdx"), unique = true, sparse = true)
+      Index(
+        key                = Seq("name" -> IndexType.Ascending),
+        name               = Some("aNameUniqueIdx"),
+        unique             = true,
+        background         = false,
+        sparse             = true,
+        expireAfterSeconds = None,
+        storageEngine      = None,
+        weights            = None,
+        defaultLanguage    = None,
+        languageOverride   = None,
+        textIndexVersion   = None,
+        sphereIndexVersion = None,
+        bits               = None,
+        min                = None,
+        max                = None,
+        bucketSize         = None,
+        collation          = None,
+        wildcardProjection = None,
+        version            = None,
+        partialFilter      = None,
+        options            = BSONDocument.empty
+      )
     )
 
     override def isInsertion(suppliedId: BSONObjectID, returned: AtomicTestObject): Boolean =
@@ -275,7 +297,29 @@ class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with
       with AtomicUpdate[AtomicTestObjectWithIdOverride] {
 
     override def indexes = Seq(
-      Index(Seq("name" -> IndexType.Ascending), name = Some("aNameUniqueIdx"), unique = true, sparse = true)
+      Index(
+        key                = Seq("name" -> IndexType.Ascending),
+        name               = Some("aNameUniqueIdx"),
+        unique             = true,
+        background         = false,
+        sparse             = true,
+        expireAfterSeconds = None,
+        storageEngine      = None,
+        weights            = None,
+        defaultLanguage    = None,
+        languageOverride   = None,
+        textIndexVersion   = None,
+        sphereIndexVersion = None,
+        bits               = None,
+        min                = None,
+        max                = None,
+        bucketSize         = None,
+        collation          = None,
+        wildcardProjection = None,
+        version            = None,
+        partialFilter      = None,
+        options            = BSONDocument.empty
+      )
     )
 
     override def isInsertion(suppliedId: BSONObjectID, returned: AtomicTestObjectWithIdOverride): Boolean =

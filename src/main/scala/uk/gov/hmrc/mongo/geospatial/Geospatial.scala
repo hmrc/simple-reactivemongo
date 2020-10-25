@@ -18,6 +18,7 @@ package uk.gov.hmrc.mongo.geospatial
 
 import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.ReadPreference
+import reactivemongo.api.bson.BSONDocument
 import uk.gov.hmrc.mongo.ReactiveRepository
 
 import scala.concurrent.Future
@@ -34,7 +35,29 @@ trait Geospatial[A, ID] {
 
   lazy val LocationField = "loc"
 
-  lazy val geo2DSphericalIndex = Index(Seq((LocationField, Geo2DSpherical)), Some("geo2DSphericalIdx"))
+  lazy val geo2DSphericalIndex = Index(
+      key = Seq((LocationField, Geo2DSpherical)),
+      name = Some("geo2DSphericalIdx"),
+      unique = false,
+      background = false,
+      sparse = false,
+      expireAfterSeconds = None,
+      storageEngine = None,
+      weights = None,
+      defaultLanguage = None,
+      languageOverride = None,
+      textIndexVersion = None,
+      sphereIndexVersion = None,
+      bits = None,
+      min = None,
+      max = None,
+      bucketSize = None,
+      collation = None,
+      wildcardProjection = None,
+      version = None,
+      partialFilter = None,
+      options = BSONDocument.empty
+    )
 
   def nearPoint(
     lon: Double,

@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.mongo
 
+import java.time.Instant
+
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
 import ch.qos.logback.core.read.ListAppender
@@ -27,12 +29,11 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.BSONObjectID
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.core.errors.DatabaseException
+import reactivemongo.play.json.compat._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
 import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
-
-import scala.concurrent.ExecutionContext
 
 class ReactiveRepositorySpec
     extends WordSpec
@@ -131,7 +132,7 @@ class ReactiveRepositorySpec
   "remove with provided query" should {
 
     "remove by one field" in {
-      val e1 = TestObject("1", Some("used to identify"))
+      val e1 = TestObject("1", Instant.now().toEpochMilli, Some("used to identify"))
 
       await(repository.insert(e1))
 
@@ -147,7 +148,7 @@ class ReactiveRepositorySpec
 
       import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
 
-      val e1 = TestObject("1", Some("used to identify"))
+      val e1 = TestObject("1", Instant.now().toEpochMilli, Some("used to identify"))
 
       await(repository.insert(e1))
 
@@ -214,8 +215,8 @@ class ReactiveRepositorySpec
       withCaptureOfLoggingFrom[FailingIndexesTestRepository] { logList =>
         await(uniqueIndexRepository.drop)
 
-        await(uniqueIndexRepository.insert(TestObject("uniqueKey", Some("bogus"))))
-        await(uniqueIndexRepository.insert(TestObject("uniqueKey", Some("whatever"))))
+        await(uniqueIndexRepository.insert(TestObject("uniqueKey", Instant.now().toEpochMilli, Some("bogus"))))
+        await(uniqueIndexRepository.insert(TestObject("uniqueKey", Instant.now().toEpochMilli, Some("whatever"))))
 
         await(uniqueIndexRepository.ensureIndexes) shouldBe Seq(false)
         logList.size                               should be(1)
@@ -310,11 +311,31 @@ class ReactiveRepositorySpec
   "Bulk insert" should {
     val now = LocalDate.now(DateTimeZone.UTC)
     val objects = Seq(
-      TestObject("firstItem", Some("1"), Some(List(NestedModel("a", "b"))), date  = now),
-      TestObject("secondItem", Some("2"), Some(List(NestedModel("c", "d"))), date = now.plusDays(1)),
-      TestObject("thirdItem", Some("3"), Some(List(NestedModel("e", "f"))), date  = now.plusDays(2)),
-      TestObject("fourthItem", Some("4"), Some(List(NestedModel("g", "h"))), date = now.plusDays(3)),
-      TestObject("fifthItem", Some("5"), Some(List(NestedModel("i", "j"))), date  = now.plusDays(4))
+      TestObject("firstItem", Instant.now().toEpochMilli, Some("1"), Some(List(NestedModel("a", "b"))), date = now),
+      TestObject(
+        "secondItem",
+        Instant.now().toEpochMilli,
+        Some("2"),
+        Some(List(NestedModel("c", "d"))),
+        date = now.plusDays(1)),
+      TestObject(
+        "thirdItem",
+        Instant.now().toEpochMilli,
+        Some("3"),
+        Some(List(NestedModel("e", "f"))),
+        date = now.plusDays(2)),
+      TestObject(
+        "fourthItem",
+        Instant.now().toEpochMilli,
+        Some("4"),
+        Some(List(NestedModel("g", "h"))),
+        date = now.plusDays(3)),
+      TestObject(
+        "fifthItem",
+        Instant.now().toEpochMilli,
+        Some("5"),
+        Some(List(NestedModel("i", "j"))),
+        date = now.plusDays(4))
     )
 
     "insert all entities supplied" in {
@@ -350,6 +371,7 @@ case class NestedModel(a: String, b: String)
 
 case class TestObject(
   aField: String,
+  aLongField: Long                                                         = Instant.now().toEpochMilli,
   anotherField: Option[String]                                             = None,
   optionalCollection: Option[List[NestedModel]]                            = None,
   nestedMapOfCollections: Map[String, List[Map[String, Seq[NestedModel]]]] = Map.empty,
@@ -365,14 +387,14 @@ case class TestObject(
 }
 
 object TestObject {
-  implicit val formats: Format[TestObject] = mongoEntity {
+  implicit val formats: OFormat[TestObject] = mongoEntity {
     implicit val locationFormat: Format[(Double, Double)] = TupleFormats.tuple2Format[Double, Double]
     implicit val nestedModelformats: OFormat[NestedModel] = Json.format[NestedModel]
     Json.format[TestObject]
   }
 }
 
-class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
+class SimpleTestRepository(implicit mc: MongoConnector)
     extends ReactiveRepository[TestObject, BSONObjectID](
       collectionName = "simpleTestRepository",
       mongo          = mc.db,
@@ -380,12 +402,56 @@ class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
       idFormat       = ReactiveMongoFormats.objectIdFormats) {
 
   override def indexes = Seq(
-    Index(Seq("aField"       -> IndexType.Ascending), name = Some("aFieldUniqueIdx"), unique = true, sparse = true),
-    Index(Seq("anotherField" -> IndexType.Ascending), name = Some("anotherFieldIndex"))
+    Index(
+      key                = Seq("aField" -> IndexType.Ascending),
+      name               = Some("aFieldUniqueIdx"),
+      unique             = true,
+      background         = false,
+      sparse             = true,
+      expireAfterSeconds = None,
+      storageEngine      = None,
+      weights            = None,
+      defaultLanguage    = None,
+      languageOverride   = None,
+      textIndexVersion   = None,
+      sphereIndexVersion = None,
+      bits               = None,
+      min                = None,
+      max                = None,
+      bucketSize         = None,
+      collation          = None,
+      wildcardProjection = None,
+      version            = None,
+      partialFilter      = None,
+      options            = BSONDocument.empty
+    ),
+    Index(
+      key                = Seq("anotherField" -> IndexType.Ascending),
+      name               = Some("anotherFieldIndex"),
+      unique             = false,
+      background         = false,
+      sparse             = false,
+      expireAfterSeconds = None,
+      storageEngine      = None,
+      weights            = None,
+      defaultLanguage    = None,
+      languageOverride   = None,
+      textIndexVersion   = None,
+      sphereIndexVersion = None,
+      bits               = None,
+      min                = None,
+      max                = None,
+      bucketSize         = None,
+      collation          = None,
+      wildcardProjection = None,
+      version            = None,
+      partialFilter      = None,
+      options            = BSONDocument.empty
+    )
   )
 }
 
-class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
+class FailingIndexesTestRepository(implicit mc: MongoConnector)
     extends ReactiveRepository[TestObject, BSONObjectID](
       "failingIndexesTestRepository",
       mc.db,
@@ -395,6 +461,28 @@ class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionCon
   def indexName = "index1"
 
   override def indexes = Seq(
-    Index(Seq("aField" -> IndexType.Ascending), name = Some(indexName), unique = true, sparse = true)
+    Index(
+      key                = Seq("aField" -> IndexType.Ascending),
+      name               = Some(indexName),
+      unique             = true,
+      background         = false,
+      sparse             = true,
+      expireAfterSeconds = None,
+      storageEngine      = None,
+      weights            = None,
+      defaultLanguage    = None,
+      languageOverride   = None,
+      textIndexVersion   = None,
+      sphereIndexVersion = None,
+      bits               = None,
+      min                = None,
+      max                = None,
+      bucketSize         = None,
+      collation          = None,
+      wildcardProjection = None,
+      version            = None,
+      partialFilter      = None,
+      options            = BSONDocument.empty
+    )
   )
 }

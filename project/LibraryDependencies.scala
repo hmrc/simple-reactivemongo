@@ -9,7 +9,7 @@ object LibraryDependencies {
   val compile: Seq[ModuleID] = PlayCrossCompilation.dependencies(
     shared = Seq(
       "com.github.nscala-time" %% "nscala-time"      % "2.22.0",
-      "org.reactivemongo"      %% "reactivemongo"    % "0.18.8",
+      "org.reactivemongo"      %% "reactivemongo"    % "0.20.12-fix1",
       "org.slf4j"              %  "slf4j-api"        % "1.7.26",
       "org.slf4j"              %  "log4j-over-slf4j" % "1.7.26",
       // force commons-codec to avoid 1.13 and 1.14 until 1.15 is available
@@ -18,7 +18,8 @@ object LibraryDependencies {
     ),
     play25 = Seq(
       "com.typesafe.play" %% "play"                    % play25Version,
-      "org.reactivemongo" %% "reactivemongo-play-json" % "0.18.8-play25",
+      "org.reactivemongo" %% "reactivemongo-play-json" % "0.20.12-play25-fix1",
+      "org.reactivemongo"      %% "reactivemongo-play-json-compat"    % "0.20.12-play25-fix1",
       // force dependencies due to security flaws found in jackson-databind < 2.9.x using XRay
       "com.fasterxml.jackson.core"     % "jackson-core"            % "2.9.8",
       "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.9.8",
@@ -31,12 +32,14 @@ object LibraryDependencies {
     play26 = Seq(
       "com.typesafe.play" %% "play"                    % play26Version,
       "com.typesafe.play" %% "play-guice"              % play26Version,
-      "org.reactivemongo" %% "reactivemongo-play-json" % "0.18.8-play26"
+      "org.reactivemongo" %% "reactivemongo-play-json" % "0.20.12-play26-fix1",
+      "org.reactivemongo"      %% "reactivemongo-play-json-compat"    % "0.20.12-play26-fix1"
     ),
     play27 = Seq(
       "com.typesafe.play" %% "play"                    % play27Version,
       "com.typesafe.play" %% "play-guice"              % play27Version,
-      "org.reactivemongo" %% "reactivemongo-play-json" % "0.18.8-play27"
+      "org.reactivemongo" %% "reactivemongo-play-json" % "0.20.12-play27-fix1",
+      "org.reactivemongo"      %% "reactivemongo-play-json-compat"    % "0.20.12-play27-fix1"
     )
   )
 

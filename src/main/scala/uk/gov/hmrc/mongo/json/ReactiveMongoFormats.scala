@@ -25,36 +25,30 @@ import scala.util.{Failure, Success}
 trait ReactiveMongoFormats {
 
   implicit val localDateRead: Reads[LocalDate] =
-    (__ \ "$date").read[Long].map { date =>
+    __.read[Long].map { date =>
       new LocalDate(date, DateTimeZone.UTC)
     }
 
   implicit val localDateWrite: Writes[LocalDate] = new Writes[LocalDate] {
-    def writes(localDate: LocalDate): JsValue = Json.obj(
-      "$date" -> localDate.toDateTimeAtStartOfDay(DateTimeZone.UTC).getMillis
-    )
+    def writes(localDate: LocalDate): JsValue = JsNumber(localDate.toDateTimeAtStartOfDay(DateTimeZone.UTC).getMillis)
   }
 
   implicit val localDateTimeRead: Reads[LocalDateTime] =
-    (__ \ "$date").read[Long].map { dateTime =>
+    __.read[Long].map { dateTime =>
       new LocalDateTime(dateTime, DateTimeZone.UTC)
     }
 
   implicit val localDateTimeWrite: Writes[LocalDateTime] = new Writes[LocalDateTime] {
-    def writes(dateTime: LocalDateTime): JsValue = Json.obj(
-      "$date" -> dateTime.toDateTime(DateTimeZone.UTC).getMillis
-    )
+    def writes(dateTime: LocalDateTime): JsValue = JsNumber(dateTime.toDateTime(DateTimeZone.UTC).getMillis)
   }
 
   implicit val dateTimeRead: Reads[DateTime] =
-    (__ \ "$date").read[Long].map { dateTime =>
+    __.read[Long].map { dateTime =>
       new DateTime(dateTime, DateTimeZone.UTC)
     }
 
   implicit val dateTimeWrite: Writes[DateTime] = new Writes[DateTime] {
-    def writes(dateTime: DateTime): JsValue = Json.obj(
-      "$date" -> dateTime.getMillis
-    )
+    def writes(dateTime: DateTime): JsValue = JsNumber(dateTime.getMillis)
   }
 
   implicit val objectIdRead: Reads[BSONObjectID] = Reads[BSONObjectID] { json =>
@@ -77,14 +71,14 @@ trait ReactiveMongoFormats {
   implicit val localDateFormats     = Format(localDateRead, localDateWrite)
   implicit val localDateTimeFormats = Format(localDateTimeRead, localDateTimeWrite)
 
-  def mongoEntity[A](baseFormat: Format[A]): Format[A] = {
+  def mongoEntity[A](baseFormat: OFormat[A]): OFormat[A] = {
     import JsonExtensions._
     val publicIdPath: JsPath  = JsPath \ '_id
     val privateIdPath: JsPath = JsPath \ 'id
-    new Format[A] {
+    new OFormat[A] {
       def reads(json: JsValue): JsResult[A] = baseFormat.compose(copyKey(publicIdPath, privateIdPath)).reads(json)
 
-      def writes(o: A): JsValue = baseFormat.transform(moveKey(privateIdPath, publicIdPath)).writes(o)
+      def writes(o: A): JsObject = baseFormat.transform(moveKey(privateIdPath, publicIdPath)).writes(o)
     }
   }
 }

@@ -17,15 +17,17 @@
 package uk.gov.hmrc.mongo
 
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.libs.json.{Format, JsObject, Json}
+import play.api.libs.json.Json.JsValueWrapper
+import play.api.libs.json.{OFormat, _}
 import reactivemongo.api.Cursor.FailOnError
+import reactivemongo.api.bson.BSONDocumentHandler
+import reactivemongo.api.bson.collection.BSONCollection
 import reactivemongo.api.commands._
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{DB, ReadConcern, ReadPreference}
 import reactivemongo.core.errors.GenericDatabaseException
-import reactivemongo.play.json.ImplicitBSONHandlers
-import reactivemongo.play.json.collection.JSONCollection
-import reactivemongo.play.json.commands.JSONFindAndModifyCommand.Update
+import reactivemongo.play.json.JSONSerializationPack
+import reactivemongo.play.json.commands.JSONFindAndModifyCommand
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.duration.FiniteDuration
@@ -35,20 +37,21 @@ import scala.util.control.NoStackTrace
 abstract class ReactiveRepository[A, ID](
   protected[mongo] val collectionName: String,
   protected[mongo] val mongo: () => DB,
-  domainFormat: Format[A],
+  domainFormat: OFormat[A],
   idFormat: Format[ID] = ReactiveMongoFormats.objectIdFormats)
     extends Indexes
     with MongoDb
     with CollectionName
     with CurrentTime {
 
-  import ImplicitBSONHandlers._
-  import play.api.libs.json.Json.JsValueWrapper
+  import reactivemongo.play.json.compat._
+  import json2bson._
 
-  implicit val domainFormatImplicit: Format[A] = domainFormat
-  implicit val idFormatImplicit: Format[ID]    = idFormat
+  implicit val domainFormatImplicit: BSONDocumentHandler[A] = domainFormat
 
-  lazy val collection: JSONCollection = mongo().collection[JSONCollection](collectionName)
+  implicit val idFormatImplicit: Format[ID] = idFormat
+
+  lazy val collection: BSONCollection = mongo().collection[BSONCollection](collectionName)
 
   protected[this] val logger: Logger = LoggerFactory.getLogger(this.getClass)
   val message: String                = "Failed to ensure index"
@@ -86,18 +89,18 @@ abstract class ReactiveRepository[A, ID](
     writeConcern: WriteConcern        = WriteConcern.Default,
     maxTime: Option[FiniteDuration]   = None,
     collation: Option[Collation]      = None,
-    arrayFilters: Seq[JsObject]       = Nil)(implicit ec: ExecutionContext): Future[FindAndModifyCommand.Result[collection.pack.type]] =
+    arrayFilters: Seq[JsObject]       = Nil)(implicit ec: ExecutionContext): Future[FindAndModifyCommand.Result[JSONSerializationPack.type]] =
     collection.findAndModify(
-      selector                 = query,
-      modifier                 = Update(update, fetchNewObject, upsert),
-      sort                     = sort,
-      fields                   = fields,
+      selector                 = toDocument(query),
+      modifier                 = collection.updateModifier(toDocument(update), fetchNewObject, upsert),
+      sort                     = sort.map(toDocument),
+      fields                   = fields.map(toDocument),
       bypassDocumentValidation = bypassDocumentValidation,
       writeConcern             = writeConcern,
       maxTime                  = maxTime,
       collation                = collation,
-      arrayFilters             = arrayFilters
-    )
+      arrayFilters             = arrayFilters.map(toDocument)
+    ).map(r => JSONFindAndModifyCommand.FindAndModifyResult(r.lastError, r.value.map(fromDocument))) // TODO r.lastError doesn't have correct pack type
 
   def count(implicit ec: ExecutionContext): Future[Int] = count(None, ReadPreference.primary)
 
@@ -106,7 +109,7 @@ abstract class ReactiveRepository[A, ID](
 
   private def count(query: Option[JsObject], readPreference: ReadPreference)(
     implicit ec: ExecutionContext): Future[Int] =
-    collection.withReadPreference(readPreference).count(selector = query,
+    collection.withReadPreference(readPreference).count(selector = query.map(toDocument),
       limit = None,
       skip = 0,
       hint =  None,
@@ -160,7 +163,7 @@ abstract class ReactiveRepository[A, ID](
 
   class BulkInsertRejected extends Exception("No objects inserted. Error converting some or all to JSON")
 
-  private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] =
+  private def ensureIndex(index: Index.Default)(implicit ec: ExecutionContext): Future[Boolean] =
     collection.indexesManager
       .create(index)
       .map(wr => {
@@ -195,5 +198,5 @@ case class Updated[A](previousValue: A, savedValue: A) extends UpdateType[A]
 case class DatabaseUpdate[A](writeResult: LastError, updateType: UpdateType[A])
 
 trait Indexes {
-  def indexes: Seq[Index] = Seq.empty
+  def indexes: Seq[Index.Default] = Seq.empty
 }

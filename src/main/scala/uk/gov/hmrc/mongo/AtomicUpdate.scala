@@ -22,7 +22,7 @@ import reactivemongo.api.collections.bson.BSONCollection
 import reactivemongo.api.commands.LastError
 import reactivemongo.api.commands.bson.BSONFindAndModifyCommand._
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectReader
+import reactivemongo.play.json.compat._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -84,7 +84,7 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers with MongoDb w
     upsert: Boolean,
     idAttributeName: String = "_id")(
     implicit ec: ExecutionContext,
-    reads: Reads[T]): Future[Option[DatabaseUpdate[T]]] = withCurrentTime { implicit time =>
+    reads: Reads[T]): Future[Option[DatabaseUpdate[T]]] = withCurrentTime { _ =>
     val (updateCommand, insertDocumentId) = if (upsert) {
       val insertedId = BSONObjectID.generate
       (modifierBson ++ createIdOnInsertOnly(insertedId, idAttributeName), Some(insertedId))
@@ -130,7 +130,7 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers with MongoDb w
         DatabaseUpdate(le(updatedExisting = true), Updated[T](result, result))
     }
 
-    JsObjectReader.read(s).validate[T] match {
+    fromDocument(s).validate[T] match {
       case JsSuccess(result, _) => Future.successful(createResult(result))
       case JsError(errors)      => Future.failed(JsResultException(errors))
     }

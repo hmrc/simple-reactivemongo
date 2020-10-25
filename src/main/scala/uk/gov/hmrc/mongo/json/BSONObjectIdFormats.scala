@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.mongo.json
 
-import play.api.libs.json._
+import play.api.libs.json.{Format, JsError, JsString, JsSuccess, JsValue, Reads, Writes, __}
 import reactivemongo.bson.BSONObjectID
 
 import scala.util.{Failure, Success}
