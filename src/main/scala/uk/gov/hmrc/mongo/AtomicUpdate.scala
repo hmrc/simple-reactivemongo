@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,21 +84,24 @@ trait AtomicUpdate[T] extends CurrentTime with BSONBuilderHelpers with MongoDb w
     upsert: Boolean,
     idAttributeName: String = "_id")(
     implicit ec: ExecutionContext,
-    reads: Reads[T]): Future[Option[DatabaseUpdate[T]]] = withCurrentTime { implicit time =>
-    val (updateCommand, insertDocumentId) = if (upsert) {
-      val insertedId = BSONObjectID.generate
-      (modifierBson ++ createIdOnInsertOnly(insertedId, idAttributeName), Some(insertedId))
-    } else (modifierBson, None)
+    reads: Reads[T]
+  ): Future[Option[DatabaseUpdate[T]]] = {
+    val (updateCommand, insertDocumentId) =
+      if (upsert) {
+        val insertedId = BSONObjectID.generate
+        (modifierBson ++ createIdOnInsertOnly(insertedId, idAttributeName), Some(insertedId))
+      } else
+        (modifierBson, None)
 
     for {
-      updateResult <- bsonCollection.findAndModify(
-                       selector = finder,
-                       modifier = Update(updateCommand, fetchNewObject = true, upsert)
-                     )
+      updateResult       <- bsonCollection.findAndModify(
+                              selector = finder,
+                              modifier = Update(updateCommand, fetchNewObject = true, upsert)
+                            )
       saveOrUpdateResult <- updateResult.value match {
-                             case Some(update) => toDbUpdate(update, insertDocumentId).map(Some(_))
-                             case None         => Future.successful(None)
-                           }
+                              case Some(update) => toDbUpdate(update, insertDocumentId).map(Some(_))
+                              case None         => Future.successful(None)
+                            }
     } yield saveOrUpdateResult
   }
 

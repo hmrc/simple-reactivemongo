@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package play.modules.reactivemongo
 import java.util.concurrent.TimeUnit
 
 import javax.inject.{Inject, Singleton}
-import play.api._
+import play.api.{Configuration, Environment, Mode, PlayException}
 import reactivemongo.api.FailoverStrategy
 
 import scala.concurrent.duration.FiniteDuration
@@ -28,58 +28,62 @@ import scala.concurrent.duration.FiniteDuration
 class MongoConfig(
   environment: Environment,
   configuration: Configuration,
-  delayFactorFinder: Option[Configuration] => Int => Double) {
-
-  import Implicits._
-
+  delayFactorFinder: Option[Configuration] => Int => Double
+) {
   @Inject() def this(environment: Environment, configuration: Configuration) =
     this(environment, configuration, DelayFactor)
 
-  lazy val uri: String = mongoConfig
-    .getOptional[String]("uri")
-    .getOrElse(throw new IllegalStateException("mongodb.uri not defined"))
+  lazy val uri: String =
+    mongoConfig
+      .getOptional[String]("uri")
+      .getOrElse(throw new IllegalStateException("mongodb.uri not defined"))
 
   lazy val maybeFailoverStrategy: Option[FailoverStrategy] =
-    mongoConfig.getOptional[Configuration]("failoverStrategy") match {
-      case Some(fs: Configuration) =>
-        val initialDelay: FiniteDuration = fs
-          .getOptional[Long]("initialDelayMsecs")
-          .map(delay => new FiniteDuration(delay, TimeUnit.MILLISECONDS))
-          .getOrElse(FailoverStrategy().initialDelay)
-        val retries: Int = fs.getOptional[Int]("retries").getOrElse(FailoverStrategy().retries)
+    mongoConfig
+      .getOptional[Configuration]("failoverStrategy")
+      .map { fs =>
+        val initialDelay: FiniteDuration =
+          fs
+            .getOptional[Long]("initialDelayMsecs")
+            .map(delay => new FiniteDuration(delay, TimeUnit.MILLISECONDS))
+            .getOrElse(FailoverStrategy().initialDelay)
 
-        Some(
-          FailoverStrategy().copy(
-            initialDelay = initialDelay,
-            retries      = retries,
-            delayFactor  = delayFactorFinder(fs.getOptional[Configuration]("delay"))
-          )
+        val retries: Int =
+          fs
+            .getOptional[Int]("retries")
+            .getOrElse(FailoverStrategy().retries)
+
+        FailoverStrategy().copy(
+          initialDelay = initialDelay,
+          retries      = retries,
+          delayFactor  = delayFactorFinder(fs.getOptional[Configuration]("delay"))
         )
-      case _ => None
-    }
+      }
 
   lazy val dbTimeout: Option[FiniteDuration] =
-    mongoConfig.getOptional[Long]("dbTimeoutMsecs")
-        .map(dbTimeout => new FiniteDuration(dbTimeout, TimeUnit.MILLISECONDS))
+    mongoConfig
+      .getOptional[Long]("dbTimeoutMsecs")
+      .map(dbTimeout => new FiniteDuration(dbTimeout, TimeUnit.MILLISECONDS))
 
   lazy val defaultHeartbeatFrequencyMS: Option[Int] =
-    mongoConfig.getOptional[Int]("defaultHeartbeatFrequencyMS")
+    mongoConfig
+      .getOptional[Int]("defaultHeartbeatFrequencyMS")
       .orElse(configuration.getOptional[Int]("platform.mongodb.defaultHeartbeatFrequencyMS")) // see BDOG-910 comments
 
-  private lazy val mongoConfig: Configuration = configuration
-    .getOptional[Configuration]("mongodb")
-    .orElse(configuration.getOptional[Configuration](s"${environment.mode}.mongodb"))
-    .orElse(configuration.getOptional[Configuration](s"${Mode.Dev}.mongodb"))
-    .getOrElse(throw new Exception("The application does not contain required mongodb configuration"))
+  private lazy val mongoConfig: Configuration =
+    configuration
+      .getOptional[Configuration]("mongodb")
+      .orElse(configuration.getOptional[Configuration](s"${environment.mode}.mongodb"))
+      .orElse(configuration.getOptional[Configuration](s"${Mode.Dev}.mongodb"))
+      .getOrElse(throw new Exception("The application does not contain required mongodb configuration"))
 
-  lazy val diagnostics: Boolean = mongoConfig.getBoolean("diagnostics").getOrElse(false)
+  lazy val diagnostics: Boolean =
+    mongoConfig
+      .getOptional[Boolean]("diagnostics")
+      .getOrElse(false)
 }
 
 private object DelayFactor extends (Option[Configuration] => Int => Double) {
-
-  import scala.math.pow
-  import Implicits._
-
   def apply(delay: Option[Configuration]): Int => Double =
     delay match {
       case Some(df: Configuration) =>
@@ -99,24 +103,20 @@ private object DelayFactor extends (Option[Configuration] => Int => Double) {
       case _ => FailoverStrategy().delayFactor
     }
 
-  private def linear(f: Double): Int => Double = n => n * f
+  private def linear(f: Double): Int => Double =
+    n => n * f
 
-  private def exponential(f: Double): Int => Double = n => pow(n, f)
+  private def exponential(f: Double): Int => Double =
+    n => scala.math.pow(n, f)
 
-  private def static(f: Double): Int => Double = n => f
+  private def static(f: Double): Int => Double =
+    n => f
 
-  private def fibonacci(f: Double): Int => Double = n => f * (fib take n).last
+  private def fibonacci(f: Double): Int => Double =
+    n => f * (fib take n).last
 
   private def fib: Stream[Long] = {
     def tail(h: Long, n: Long): Stream[Long] = h #:: tail(n, h + n)
     tail(0, 1)
-  }
-}
-
-private object Implicits {
-  // Aligns Configuration API for play 2.5 and 2.6
-  implicit class ConfigurationOps(configuration: Configuration) {
-    private[reactivemongo] def getOptional[T](key: String)(implicit valueFinder: ValueFinder[T]): Option[T] =
-      valueFinder.getOptional(configuration, key)
   }
 }

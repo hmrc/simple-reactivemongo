@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,13 +50,16 @@ class ReactiveMongoComponentImpl @Inject()(
   lifecycle: ApplicationLifecycle)
     extends ReactiveMongoComponent {
 
-  Logger.info("ReactiveMongoPlugin starting...")
+  val logger = Logger("application")
+
+  logger.info("ReactiveMongoPlugin starting...")
 
   private lazy val mongoConfig = new MongoConfig(environment, configuration)
 
   val mongoConnector: MongoConnector = {
 
-    if(mongoConfig.diagnostics) MongoDiagnostics.runAll(mongoConfig)
+    if (mongoConfig.diagnostics)
+      MongoDiagnostics.runAll(mongoConfig)
 
     MongoConnector(
       mongoConfig.uri,
@@ -66,59 +69,60 @@ class ReactiveMongoComponentImpl @Inject()(
     )
 
   }
-  Logger.debug(s"ReactiveMongoPlugin: MongoConnector configuration being used: $mongoConnector")
+  logger.debug(s"ReactiveMongoPlugin: MongoConnector configuration being used: $mongoConnector")
 
   lifecycle.addStopHook { () =>
     Future.successful {
-      Logger.info("ReactiveMongoPlugin stops, closing connections...")
+      logger.info("ReactiveMongoPlugin stops, closing connections...")
       mongoConnector.close()
     }
   }
 }
 
 object MongoDiagnostics {
+  val logger = Logger("application")
 
-  def runAll(config: MongoConfig):Unit = Try {
-    Logger.info("Running mongo diagnostics")
-    logConfig(config)
-    validateDNS(config)
-    validateNetworkConnectivity(config)
-    Logger.info("Mongo diagnostics complete")
-  }
+  def runAll(config: MongoConfig): Unit =
+    Try {
+      logger.info("Running mongo diagnostics")
+      logConfig(config)
+      validateDNS(config)
+      validateNetworkConnectivity(config)
+      logger.info("Mongo diagnostics complete")
+    }
 
-  private def logConfig(config: MongoConfig): Unit = {
+  private def logConfig(config: MongoConfig): Unit =
     MongoConnection.parseURI(config.uri)
-      .foreach(puri => {
-        Logger.info(s"Mongo auth set: ${puri.authenticate.isDefined}")
-        Logger.info(s"Mongo database: ${puri.db.getOrElse("Not Set")}")
-        Logger.info(s"Mongo nodelist: ${puri.hosts.mkString(",")}")
-      })
-  }
+      .foreach { puri =>
+        logger.info(s"Mongo auth set: ${puri.authenticate.isDefined}")
+        logger.info(s"Mongo database: ${puri.db.getOrElse("Not Set")}")
+        logger.info(s"Mongo nodelist: ${puri.hosts.mkString(",")}")
+      }
 
-  private def validateDNS(config: MongoConfig):Unit = {
+  private def validateDNS(config: MongoConfig): Unit =
     MongoConnection.parseURI(config.uri).foreach { parsedUri =>
       parsedUri.hosts.map(_._1).foreach { host =>
-        InetAddress.getAllByName(host).map(_.getAddress.map(_.toInt).mkString(".")).foreach(ip => Logger.info(s"Mongo node [$host] resolves to $ip"))
+        InetAddress.getAllByName(host).map(_.getAddress.map(_.toInt).mkString("."))
+          .foreach(ip => logger.info(s"Mongo node [$host] resolves to $ip"))
       }
     }
-  }
 
-  private def validateNetworkConnectivity(mongoConfig: MongoConfig) : Unit = Try {
-      Logger.info("Testing mongo network connectivity...")
+  private def validateNetworkConnectivity(mongoConfig: MongoConfig): Unit =
+    Try {
+      logger.info("Testing mongo network connectivity...")
       MongoConnection.parseURI(mongoConfig.uri).foreach { parsedUri =>
-        parsedUri.hosts.foreach( hp => validateConnection(hp._1, hp._2))
+        parsedUri.hosts.foreach(hp => validateConnection(hp._1, hp._2))
+      }
     }
-  }
 
-  private def validateConnection(host:String, port:Int): Unit = Try {
-    val s = new Socket(host, port)
-    Logger.info(s"[$host:$port](${s.getInetAddress.toString}) connected: ${s.isConnected}, is network reachable: ${Try(s.getInetAddress.isReachable(20)).getOrElse(false)}")
-    s.close()
-  }.recoverWith {
-    case ex: Throwable => {
-      Logger.info(s"[$host:$port] Mongo network connectivity failed")
-      Failure(ex)
+  private def validateConnection(host:String, port:Int): Unit =
+    Try {
+      val s = new Socket(host, port)
+      logger.info(s"[$host:$port](${s.getInetAddress.toString}) connected: ${s.isConnected}, is network reachable: ${Try(s.getInetAddress.isReachable(20)).getOrElse(false)}")
+      s.close()
+    }.recoverWith {
+      case ex: Throwable =>
+        logger.info(s"[$host:$port] Mongo network connectivity failed")
+        Failure(ex)
     }
-  }
-
 }

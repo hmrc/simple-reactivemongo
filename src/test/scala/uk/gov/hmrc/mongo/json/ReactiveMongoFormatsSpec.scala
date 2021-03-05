@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.mongo.json
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import org.scalatest.{Matchers, OptionValues, WordSpec}
 import play.api.libs.json.{JsNumber, JsString, Json}
 import reactivemongo.bson.BSONObjectID
 
-class ReactiveMongoFormatsSpec extends WordSpec with Matchers with GeneratorDrivenPropertyChecks with OptionValues {
+class ReactiveMongoFormatsSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks with OptionValues {
 
   case class Foo(id: String, name: String, _age: Int)
 
