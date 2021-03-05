@@ -16,14 +16,15 @@
 
 package uk.gov.hmrc.mongo
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import reactivemongo.api.MongoConnectionOptions
 
 /**
   *
   * https://docs.mongodb.org/manual/reference/connection-string/#connections-connection-options
   */
-class MongoConnectorSpec extends WordSpec with Matchers {
+class MongoConnectorSpec extends AnyWordSpec with Matchers {
 
   private val defaultHeartbeatFrequencyMS: Int = MongoConnectionOptions.default.heartbeatFrequencyMS
 

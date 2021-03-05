@@ -16,7 +16,9 @@
 
 package uk.gov.hmrc.mongo
 
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsResultException, Json}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -39,15 +41,14 @@ case class AtomicTestObjectWithIdOverride(
   idAtomic: Option[BSONObjectID] = None)
 
 object AtomicTestObject {
-
   import ReactiveMongoFormats._
 
   implicit val formats = mongoEntity {
     Json.format[AtomicTestObject]
   }
 }
-object AtomicTestObjectWithIdOverride {
 
+object AtomicTestObjectWithIdOverride {
   import ReactiveMongoFormats._
 
   implicit val formats = mongoEntity {
@@ -55,7 +56,12 @@ object AtomicTestObjectWithIdOverride {
   }
 }
 
-class AtomicUpdateSpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting {
+class AtomicUpdateSpec
+  extends AnyWordSpec
+     with Matchers
+     with MongoSpecSupport
+     with BeforeAndAfterEach
+     with Awaiting {
 
   val repository               = new AtomicTestRepository
   val repositoryWithIdOverride = new AtomicTestRepositoryWithIdOverride

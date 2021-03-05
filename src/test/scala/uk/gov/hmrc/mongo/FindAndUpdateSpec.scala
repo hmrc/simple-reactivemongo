@@ -17,19 +17,21 @@
 package uk.gov.hmrc.mongo
 
 import com.outworkers.util.samplers._
-import org.scalatest._
+import org.scalatest.{BeforeAndAfterEach, OptionValues, LoneElement}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import play.api.libs.json.{Json, OFormat}
 import reactivemongo.api.DefaultDB
 
 class FindAndUpdateSpec
-    extends WordSpec
+  extends AnyWordSpec
     with Matchers
     with MongoSpecSupport
     with ScalaFutures
-    with OptionValues
     with IntegrationPatience
     with BeforeAndAfterEach
+    with OptionValues
     with Awaiting
     with LoneElement {
 

@@ -16,25 +16,24 @@
 
 package uk.gov.hmrc.mongo.geospatial
 
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{Format, Json}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.{Awaiting, MongoConnector, MongoSpecSupport, ReactiveRepository}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import scala.concurrent.ExecutionContext
-
 case class Place(loc: Coordinates, id: BSONObjectID = BSONObjectID.generate)
+
 object Place {
-
-  val formats: Format[Place] = ReactiveMongoFormats.mongoEntity({
+  val formats: Format[Place] = ReactiveMongoFormats.mongoEntity {
     import ReactiveMongoFormats.objectIdFormats
-
     Json.format[Place]
-  })
+  }
 }
 
-class GeospatialTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
+class GeospatialTestRepository(implicit mc: MongoConnector)
     extends ReactiveRepository[Place, BSONObjectID](
       "geospatialTestRepository",
       mc.db,
@@ -46,7 +45,12 @@ class GeospatialTestRepository(implicit mc: MongoConnector, ec: ExecutionContext
 
 }
 
-class LegacyGeospatialSpec extends WordSpec with Matchers with MongoSpecSupport with BeforeAndAfterEach with Awaiting {
+class LegacyGeospatialSpec
+  extends AnyWordSpec
+     with Matchers
+     with MongoSpecSupport
+     with BeforeAndAfterEach
+     with Awaiting {
 
   private val geospatialRepository = new GeospatialTestRepository
 

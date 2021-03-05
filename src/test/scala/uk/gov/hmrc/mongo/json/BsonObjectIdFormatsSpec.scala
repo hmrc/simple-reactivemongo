@@ -17,12 +17,16 @@
 package uk.gov.hmrc.mongo.json
 
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import play.api.libs.json.Json
 import reactivemongo.bson.BSONObjectID
 
-class BsonObjectIdFormatsSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
+class BsonObjectIdFormatsSpec
+  extends AnyWordSpec
+     with Matchers
+     with ScalaCheckPropertyChecks {
 
   "Serialize and deserialize a BSONObjectId to JSON" in {
     val idGen: Gen[BSONObjectID] = Gen.numChar.map(_ => reactivemongo.bson.BSONObjectID.generate())

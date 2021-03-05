@@ -21,9 +21,11 @@ import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
 import ch.qos.logback.core.read.ListAppender
 import com.outworkers.util.samplers._
 import org.joda.time.{DateTime, DateTimeZone, LocalDate}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -32,10 +34,8 @@ import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
 import uk.gov.hmrc.mongo.json.{ReactiveMongoFormats, TupleFormats}
 
-import scala.concurrent.ExecutionContext
-
 class ReactiveRepositorySpec
-    extends WordSpec
+  extends AnyWordSpec
     with Matchers
     with MongoSpecSupport
     with BeforeAndAfterEach
@@ -372,7 +372,7 @@ object TestObject {
   }
 }
 
-class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
+class SimpleTestRepository(implicit mc: MongoConnector)
     extends ReactiveRepository[TestObject, BSONObjectID](
       collectionName = "simpleTestRepository",
       mongo          = mc.db,
@@ -385,7 +385,7 @@ class SimpleTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
   )
 }
 
-class FailingIndexesTestRepository(implicit mc: MongoConnector, ec: ExecutionContext)
+class FailingIndexesTestRepository(implicit mc: MongoConnector)
     extends ReactiveRepository[TestObject, BSONObjectID](
       "failingIndexesTestRepository",
       mc.db,
