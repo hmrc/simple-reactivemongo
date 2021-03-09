@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,16 @@
 package uk.gov.hmrc.mongo.json
 
 import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import play.api.libs.json.Json
 import reactivemongo.bson.BSONObjectID
 
-class BsonObjectIdFormatsSpec extends WordSpec with Matchers with PropertyChecks {
+class BsonObjectIdFormatsSpec
+  extends AnyWordSpec
+     with Matchers
+     with ScalaCheckPropertyChecks {
 
   "Serialize and deserialize a BSONObjectId to JSON" in {
     val idGen: Gen[BSONObjectID] = Gen.numChar.map(_ => reactivemongo.bson.BSONObjectID.generate())

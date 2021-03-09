@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package play.modules.reactivemongo
 
 import java.util.UUID
 
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Millis, Seconds, Span}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -31,11 +31,15 @@ import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class InjectionSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with ScalaFutures with Eventually {
+class InjectionSpec
+  extends AnyWordSpec
+     with Matchers
+     with GuiceOneAppPerSuite
+     with ScalaFutures
+     with Eventually
+     with IntegrationPatience {
 
   private val testDbName = s"test-${this.getClass.getSimpleName}"
-  override implicit val patienceConfig: PatienceConfig =
-    PatienceConfig(timeout = Span(2, Seconds), interval = Span(150, Millis))
 
   override lazy val app =
     new GuiceApplicationBuilder()

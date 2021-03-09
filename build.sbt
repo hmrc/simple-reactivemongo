@@ -1,18 +1,15 @@
-import PlayCrossCompilation._
+import PlayCrossCompilation.playCrossCompilationSettings
 
-val libName = "simple-reactivemongo"
-
-lazy val simpleReactiveMongo = Project(libName, file("."))
-  .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
+lazy val simpleReactiveMongo = Project("simple-reactivemongo", file("."))
+  .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
   .disablePlugins(JUnitXmlReportPlugin)
   .settings(
     makePublicallyAvailableOnBintray := true,
-    majorVersion                     := 7
+    majorVersion                     := 8
   )
   .settings(
-    scalaVersion        := "2.11.12",
+    scalaVersion        := "2.12.13",
     libraryDependencies ++= LibraryDependencies.compile ++ LibraryDependencies.test,
     resolvers           += Resolver.typesafeRepo("releases"),
-    crossScalaVersions  := Seq("2.11.12", "2.12.8"),
     playCrossCompilationSettings
   )

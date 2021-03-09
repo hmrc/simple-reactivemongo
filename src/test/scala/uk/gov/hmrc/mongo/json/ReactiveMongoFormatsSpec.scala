@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,24 @@
 
 package uk.gov.hmrc.mongo.json
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.{Matchers, OptionValues, WordSpec}
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import org.scalatest.OptionValues
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsNumber, JsString, Json}
 import reactivemongo.bson.BSONObjectID
 
-class ReactiveMongoFormatsSpec extends WordSpec with Matchers with GeneratorDrivenPropertyChecks with OptionValues {
+class ReactiveMongoFormatsSpec
+  extends AnyWordSpec
+     with Matchers
+     with ScalaCheckPropertyChecks
+     with OptionValues {
 
   case class Foo(id: String, name: String, _age: Int)
 
   val idGen: Gen[BSONObjectID] = Gen.numChar.map(_ => reactivemongo.bson.BSONObjectID.generate())
 
   "mongoEntity" should {
-
     "serialize and deserialize a BSONObjectId to JSON" in {
       import ReactiveMongoFormats._
 
@@ -40,11 +45,9 @@ class ReactiveMongoFormatsSpec extends WordSpec with Matchers with GeneratorDriv
         deserialized.isSuccess shouldBe true
         deserialized.get       shouldBe id
       }
-
     }
 
     "replace _id with id when reading json" in {
-
       val json =
         Json.obj("_id" -> JsString("id"), "name" -> JsString("name"), "_age" -> JsNumber(22), "id" -> "ignored")
 

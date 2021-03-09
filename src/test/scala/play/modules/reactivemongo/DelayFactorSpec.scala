@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 package play.modules.reactivemongo
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.{Configuration, PlayException}
 import reactivemongo.api.FailoverStrategy
 
-class DelayFactorSpec extends WordSpec with Matchers {
+class DelayFactorSpec extends AnyWordSpec with Matchers {
 
   "Configuration key 'delay'" should {
     "default to FailoverStrategy#delayFactor if not set" in {

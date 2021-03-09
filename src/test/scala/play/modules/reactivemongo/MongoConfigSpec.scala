@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,19 @@ import java.io.File
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.Matchers._
-import org.scalatest.WordSpec
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import play.api.{Configuration, Environment, Mode}
 import reactivemongo.api.FailoverStrategy
 
 import scala.concurrent.duration.FiniteDuration
 
-class MongoConfigSpec extends WordSpec with MockFactory with PropertyChecks {
+class MongoConfigSpec
+  extends AnyWordSpec
+     with Matchers
+     with MockFactory
+     with ScalaCheckPropertyChecks {
 
   private val mode        = Mode.Prod
   private val environment = Environment(new File("."), getClass.getClassLoader, mode)
