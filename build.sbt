@@ -5,7 +5,7 @@ lazy val simpleReactiveMongo = Project("simple-reactivemongo", file("."))
   .disablePlugins(JUnitXmlReportPlugin)
   .settings(
     makePublicallyAvailableOnBintray := true,
-    majorVersion                     := 7
+    majorVersion                     := 8
   )
   .settings(
     scalaVersion        := "2.12.13",

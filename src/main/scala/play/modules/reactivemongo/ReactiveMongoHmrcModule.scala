@@ -50,7 +50,7 @@ class ReactiveMongoComponentImpl @Inject()(
   lifecycle: ApplicationLifecycle)
     extends ReactiveMongoComponent {
 
-  val logger = Logger("application")
+  private val logger = Logger("application")
 
   logger.info("ReactiveMongoPlugin starting...")
 

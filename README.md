@@ -1,7 +1,7 @@
 
 # simple-reactivemongo
 
-[![Apache-2.0 license](http://img.shields.io/badge/license-Apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html) 
+[![Apache-2.0 license](http://img.shields.io/badge/license-Apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 Provides simple serialization for [ReactiveMongo](http://reactivemongo.org) - reactive, asynchronous and non-blocking Scala driver for MongoDB.
 
@@ -10,9 +10,16 @@ This started as a fork of [Play-ReactiveMongo](https://github.com/ReactiveMongo/
 With some minimal effort, as the ReactiveMongo people had already done the majority of the work, we felt that adding a base repository class creates a library without some
 of the issues the other simpler libraries have.
 
+## Upgrading from 7.x.x to 8.x.x?
+
+### Major changes:
+
+* Library is built for Scala 2.12 and Play 2.6, 2.7 and 2.8.
+* The deprecated `MongoDbConnection` has been removed (since it depended on a static Play application which is no longer available in Play 2.8). Inject `ReactiveMongoComponent` instead.
+
 ## Upgrading from 6.x.x to 7.x.x?
 
-###Major changes:
+### Major changes:
 
 * The dependency to HMRC's fork of `reactivemongo` has been dropped in favour of the original `reactivemongo` driver. Version 7.x.x depends now on `reactivemongo` 0.16.0.
 * It got merged with `play-reactivemongo` so all classes which used to be provided by that library are now in `simple-reactivemongo` (for instance `ReactiveMongoHmrcModule` Play module and `ReactiveMongoComponent`). As a consequence `simple-reactivemongo` should be the only dependency a service would require for interactions with `MongoDB`. There will be no new version of `play-reactivemongo` depending on the `simple-reactivemongo` 7.x.x or above.
@@ -25,12 +32,12 @@ of the issues the other simpler libraries have.
 
 ## Upgrading from 5.x.x to 6.x.x?
 
-With version 6.x.x of simple-reactivemongo, we are moving to the latest version of reactivemongo which comes with a few braking changes documented here:  
+With version 6.x.x of simple-reactivemongo, we are moving to the latest version of reactivemongo which comes with a few braking changes documented here:
 http://reactivemongo.org/releases/0.12/documentation/release-details.html#breaking-changes
 
 You will most likely encounter some of the following issues. Please have a look on how we recommend to fix them.
 
-#### No Json serializer as JsObject found 
+#### No Json serializer as JsObject found
 
 Due to keeping parity with upstream, companion objects for inner classes do not have the ImplicitBSONHandlers handlers.
 If you see an error like this:
@@ -42,7 +49,7 @@ import reactivemongo.play.json.ImplicitBSONHandlers._
 
 #### WriteResult is no longer an Exception
 
-The type hierarchy of the trait `WriteResult` has changed in new version of reactivemongo. 
+The type hierarchy of the trait `WriteResult` has changed in new version of reactivemongo.
 It’s no longer an Exception. As it no longer represents errors in the public API, the following properties have been removed: `errmsg`, `hasErrors`, `inError` and `message`.
 
 simple-reactivemongo previously exposed `inError`, something that is no longer possible.
