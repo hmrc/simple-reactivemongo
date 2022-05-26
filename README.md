@@ -1,3 +1,6 @@
+[DEPRECATED]
+=
+Use https://github.com/hmrc/hmrc-mongo instead
 
 # simple-reactivemongo
 
