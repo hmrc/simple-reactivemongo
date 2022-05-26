@@ -1,6 +1,6 @@
 [DEPRECATED]
 =
-Use https://github.com/hmrc/hmrc-mongo instead
+*Use https://github.com/hmrc/hmrc-mongo instead*
 
 # simple-reactivemongo
 
